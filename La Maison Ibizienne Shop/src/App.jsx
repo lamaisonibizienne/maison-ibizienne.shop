@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, X, Instagram, Facebook, Loader, ChevronRight, Menu, ArrowRight, ArrowLeft, Heart } from 'lucide-react';
+import { ShoppingBag, X, Instagram, Facebook, Loader, ChevronRight, Menu, ArrowRight, ArrowLeft, Heart, ChevronDown } from 'lucide-react';
 
 // ==============================================================================
 // 1. CONFIGURATION TECHNIQUE
@@ -56,7 +56,10 @@ const TEXTS = {
 const proceedToCheckout = (cartItems) => {
   if (cartItems.length === 0) return;
   const itemsString = cartItems.map(item => {
-    let variantId = item.variants?.edges?.[0]?.node?.id?.split('/').pop();
+    // L'item dans le panier contient maintenant le variantId spécifique choisi
+    let variantId = item.selectedVariantId?.split('/').pop(); 
+    // Fallback si ancienne structure
+    if (!variantId) variantId = item.variants?.edges?.[0]?.node?.id?.split('/').pop();
     if (!variantId) variantId = item.id.split('/').pop();
     return `${variantId}:1`; 
   }).join(',');
@@ -78,7 +81,18 @@ async function fetchShopifyData() {
                 id title handle description productType tags
                 priceRange { minVariantPrice { amount currencyCode } }
                 images(first: 2) { edges { node { url } } }
-                variants(first: 1) { edges { node { id } } }
+                
+                # CORRECTION : On récupère TOUTES les infos des variantes
+                variants(first: 20) { 
+                  edges { 
+                    node { 
+                      id 
+                      title 
+                      price { amount currencyCode }
+                      image { url }
+                    } 
+                  } 
+                }
               }
             }
           }
@@ -197,6 +211,62 @@ const HeroSection = ({ onScroll }) => (
   </div>
 );
 
+// MODAL DE SÉLECTION DE VARIANTE (CORRIGÉE & DYNAMIQUE)
+const VariantSelector = ({ product, onClose, onConfirm }) => {
+  // Sélectionne la première variante par défaut
+  const [selectedVariant, setSelectedVariant] = useState(product.variants.edges[0]?.node);
+
+  return (
+    <div className="fixed inset-0 z-[80] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
+      <div className="bg-[#FDFBF7] w-full max-w-md shadow-2xl p-8 relative" onClick={(e) => e.stopPropagation()}>
+        <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900"><X size={20} /></button>
+        
+        <div className="flex gap-6 mb-8">
+          <div className="w-24 h-32 bg-stone-100 flex-shrink-0 overflow-hidden">
+             {/* Image dynamique selon la variante */}
+            <img 
+              src={selectedVariant?.image?.url || product.images?.edges?.[0]?.node?.url} 
+              alt={product.title} 
+              className="w-full h-full object-cover" 
+            />
+          </div>
+          <div>
+            <h3 className="font-serif text-xl text-stone-900 mb-2">{product.title}</h3>
+            <p className="text-stone-500 text-xs uppercase tracking-widest mb-2">{product.productType}</p>
+            {/* Prix dynamique selon la variante */}
+            <p className="text-stone-900 font-medium text-lg">
+              {parseInt(selectedVariant?.price?.amount || 0)} €
+            </p>
+          </div>
+        </div>
+
+        <div className="mb-8">
+          <label className="text-[10px] uppercase tracking-[0.2em] text-stone-500 block mb-3 font-bold">Choisir une option</label>
+          <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+            {product.variants.edges.map(({ node }) => (
+              <button
+                key={node.id}
+                onClick={() => setSelectedVariant(node)}
+                className={`w-full text-left px-4 py-3 text-sm font-serif border transition-all flex justify-between items-center ${selectedVariant?.id === node.id ? 'border-stone-900 bg-white shadow-sm' : 'border-stone-200 hover:border-stone-400'}`}
+              >
+                <span>{node.title}</span>
+                {selectedVariant?.id === node.id && <div className="w-2 h-2 bg-stone-900 rounded-full"></div>}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button 
+          onClick={() => onConfirm(product, selectedVariant)}
+          className="w-full bg-stone-900 text-white py-4 uppercase tracking-[0.2em] text-xs font-bold hover:bg-stone-700 transition-colors"
+        >
+          Ajouter au panier - {parseInt(selectedVariant?.price?.amount || 0)} €
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const ArticleView = ({ article }) => {
   if (!article) return null;
   const node = article.node;
@@ -265,7 +335,6 @@ const ProductGrid = ({ products, title, onAdd }) => {
               <div className="relative aspect-[3/4] bg-[#F5F2EB] mb-6 overflow-hidden">
                 <img src={img1} alt={node.title} className="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 group-hover:opacity-0" />
                 <img src={img2} alt={node.title} className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-1000 group-hover:opacity-100 scale-105" />
-                {/* BOUTON CLAIR "AJOUTER AU PANIER" */}
                 <button 
                   onClick={() => onAdd(node)}
                   className="absolute bottom-0 left-0 w-full bg-[#FDFBF7]/95 backdrop-blur-sm text-stone-900 py-4 uppercase text-[10px] tracking-[0.2em] font-bold translate-y-full group-hover:translate-y-0 transition-transform duration-500 hover:bg-stone-900 hover:text-white border-t border-stone-100"
@@ -335,7 +404,7 @@ const JournalSection = ({ articles, onArticleClick }) => {
 
 const InstagramSection = () => {
   const posts = [
-    "https://www.instagram.com/p/DG3jCL4owNB/",
+    "https://images.unsplash.com/photo-1533090161767-e6ffed986c88?q=80&w=600&auto=format&fit=crop",
     "https://images.unsplash.com/photo-1522771753035-4a50c95b9389?q=80&w=600&auto=format&fit=crop",
     "https://images.unsplash.com/photo-1616486338812-3dadae4b4f9d?q=80&w=600&auto=format&fit=crop",
     "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?q=80&w=600&auto=format&fit=crop",
@@ -385,12 +454,13 @@ const CartDrawer = ({ isOpen, onClose, items }) => (
           items.map((item, index) => (
             <div key={index} className="flex gap-6 animate-fade-in">
               <div className="w-20 h-28 bg-[#F5F2EB] flex-shrink-0">
-                <img src={item.images?.edges?.[0]?.node?.url} className="w-full h-full object-cover mix-blend-multiply" />
+                <img src={item.selectedVariant?.image?.url || item.images?.edges?.[0]?.node?.url} className="w-full h-full object-cover mix-blend-multiply" />
               </div>
               <div className="flex-1 py-1 flex flex-col justify-between">
                 <div>
                   <h4 className="font-serif text-base text-stone-900 leading-tight mb-2">{item.title}</h4>
-                  <p className="text-stone-400 text-[10px] uppercase tracking-widest font-serif">{item.productType}</p>
+                  {/* On affiche le nom de la variante choisie */}
+                  <p className="text-stone-400 text-[10px] uppercase tracking-widest font-serif">{item.selectedVariant?.title !== 'Default Title' ? item.selectedVariant?.title : item.productType}</p>
                 </div>
                 <div className="flex justify-between items-end">
                   <span className="text-stone-900 font-medium text-sm">{parseInt(item.priceRange?.minVariantPrice?.amount)} €</span>
@@ -456,6 +526,9 @@ export default function App() {
   const [activeProducts, setActiveProducts] = useState([]); 
   const [activeCollectionName, setActiveCollectionName] = useState("");
   const [activeArticle, setActiveArticle] = useState(null);
+  
+  // NOUVEAU STATE : Produit en cours de sélection de variante
+  const [selectingProduct, setSelectingProduct] = useState(null);
 
   useEffect(() => {
     fetchShopifyData().then((data) => {
@@ -477,7 +550,25 @@ export default function App() {
   }, []);
 
   const scrollToCollections = () => { document.getElementById('collections')?.scrollIntoView({ behavior: 'smooth' }); };
-  const addToCart = (product) => { setCartItems([...cartItems, product]); setCartOpen(true); };
+  
+  // MODIFICATION DE LA FONCTION D'AJOUT
+  const handleAddToCartClick = (product) => {
+    const variants = product.variants?.edges || [];
+    // Si plus d'une variante, ou si la seule variante n'est pas "Default Title"
+    if (variants.length > 1 || (variants.length === 1 && variants[0].node.title !== "Default Title")) {
+      setSelectingProduct(product); // Ouvre la modal
+    } else {
+      // Ajout direct (une seule variante par défaut)
+      addToCart(product, variants[0]?.node);
+    }
+  };
+
+  const addToCart = (product, variant) => {
+    // On ajoute le produit avec l'info de la variante choisie
+    setCartItems([...cartItems, { ...product, selectedVariant: variant, selectedVariantId: variant?.id }]);
+    setCartOpen(true);
+    setSelectingProduct(null); // Ferme la modal
+  };
 
   const handleCollectionSelect = (collectionId) => {
     const collection = storeData.collections.edges.find(c => c.node.id === collectionId);
@@ -512,18 +603,33 @@ export default function App() {
   return (
     <div className="font-sans text-stone-900 bg-[#FDFBF7] min-h-screen selection:bg-stone-200">
       <Navbar logo={storeData.shop?.name} cartCount={cartItems.length} onOpenCart={() => setCartOpen(true)} />
+      
       <main>
         <HeroSection onScroll={scrollToCollections} />
         <CollectionsGrid collections={collections} onCollectionSelect={handleCollectionSelect} />
         <MaterialsSection />
+        
         <div id="new-in">
-          <ProductGrid products={activeProducts} title={activeCollectionName} onAdd={addToCart} />
+          {/* On passe la nouvelle fonction handleAddToCartClick */}
+          <ProductGrid products={activeProducts} title={activeCollectionName} onAdd={handleAddToCartClick} />
         </div>
+
         <JournalSection articles={blogArticles} onArticleClick={setActiveArticle} />
         <InstagramSection />
       </main>
+      
       <Footer logo={storeData.shop?.name} />
+      
       <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} items={cartItems} />
+      
+      {/* MODAL DE SÉLECTION */}
+      {selectingProduct && (
+        <VariantSelector 
+          product={selectingProduct} 
+          onClose={() => setSelectingProduct(null)} 
+          onConfirm={addToCart} 
+        />
+      )}
     </div>
   );
 }
