@@ -335,7 +335,7 @@ const JournalSection = ({ articles, onArticleClick }) => {
 
 const InstagramSection = () => {
   const posts = [
-    "https://images.unsplash.com/photo-1533090161767-e6ffed986c88?q=80&w=600&auto=format&fit=crop",
+    "https://www.instagram.com/p/DG3jCL4owNB/",
     "https://images.unsplash.com/photo-1522771753035-4a50c95b9389?q=80&w=600&auto=format&fit=crop",
     "https://images.unsplash.com/photo-1616486338812-3dadae4b4f9d?q=80&w=600&auto=format&fit=crop",
     "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?q=80&w=600&auto=format&fit=crop",
