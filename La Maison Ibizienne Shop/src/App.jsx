@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, X, Instagram, Facebook, Loader, ChevronRight, Menu, ArrowRight, ArrowLeft, Heart, ChevronDown } from 'lucide-react';
+import { ShoppingBag, X, Instagram, Facebook, Loader, ChevronRight, Menu, ArrowRight, ArrowLeft, Heart, ChevronDown, Minus, Plus } from 'lucide-react';
 
 // ==============================================================================
 // 1. CONFIGURATION TECHNIQUE
@@ -33,7 +33,7 @@ const TEXTS = {
       text: "Jute, rotin, osier. Tressés à la main pour apporter chaleur et texture."
     },
     {
-      title: "Artisanat",
+      title: "Artisanat Local",
       text: "Chaque pièce est unique, façonnée par des mains expertes."
     }
   ],
@@ -81,8 +81,6 @@ async function fetchShopifyData() {
                 id title handle description productType tags
                 priceRange { minVariantPrice { amount currencyCode } }
                 images(first: 2) { edges { node { url } } }
-                
-                # CORRECTION : On récupère TOUTES les infos des variantes
                 variants(first: 20) { 
                   edges { 
                     node { 
@@ -211,10 +209,16 @@ const HeroSection = ({ onScroll }) => (
   </div>
 );
 
-// MODAL DE SÉLECTION DE VARIANTE (CORRIGÉE & DYNAMIQUE)
+// MODAL DE SÉLECTION DE VARIANTE (CORRIGÉE & DYNAMIQUE + QUANTITÉ)
 const VariantSelector = ({ product, onClose, onConfirm }) => {
   // Sélectionne la première variante par défaut
   const [selectedVariant, setSelectedVariant] = useState(product.variants.edges[0]?.node);
+  const [quantity, setQuantity] = useState(1);
+
+  const increment = () => setQuantity(q => q + 1);
+  const decrement = () => setQuantity(q => (q > 1 ? q - 1 : 1));
+
+  const finalPrice = parseInt(selectedVariant?.price?.amount || 0) * quantity;
 
   return (
     <div className="fixed inset-0 z-[80] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
@@ -223,7 +227,6 @@ const VariantSelector = ({ product, onClose, onConfirm }) => {
         
         <div className="flex gap-6 mb-8">
           <div className="w-24 h-32 bg-stone-100 flex-shrink-0 overflow-hidden">
-             {/* Image dynamique selon la variante */}
             <img 
               src={selectedVariant?.image?.url || product.images?.edges?.[0]?.node?.url} 
               alt={product.title} 
@@ -232,17 +235,16 @@ const VariantSelector = ({ product, onClose, onConfirm }) => {
           </div>
           <div>
             <h3 className="font-serif text-xl text-stone-900 mb-2">{product.title}</h3>
-            <p className="text-stone-500 text-xs uppercase tracking-widest mb-2">{product.productType}</p>
-            {/* Prix dynamique selon la variante */}
+            <p className="text-stone-500 text-xs uppercase tracking-widest mb-3">{product.productType}</p>
             <p className="text-stone-900 font-medium text-lg">
               {parseInt(selectedVariant?.price?.amount || 0)} €
             </p>
           </div>
         </div>
 
-        <div className="mb-8">
-          <label className="text-[10px] uppercase tracking-[0.2em] text-stone-500 block mb-3 font-bold">Choisir une option</label>
-          <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+        <div className="mb-6">
+          <label className="text-[10px] uppercase tracking-[0.2em] text-stone-500 block mb-3 font-bold">Variantes</label>
+          <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
             {product.variants.edges.map(({ node }) => (
               <button
                 key={node.id}
@@ -256,11 +258,20 @@ const VariantSelector = ({ product, onClose, onConfirm }) => {
           </div>
         </div>
 
+        <div className="flex items-center justify-between mb-8 border-t border-stone-200 pt-6">
+          <label className="text-[10px] uppercase tracking-[0.2em] text-stone-500 font-bold">Quantité</label>
+          <div className="flex items-center border border-stone-300">
+            <button onClick={decrement} className="px-3 py-2 hover:bg-stone-100 text-stone-600"><Minus size={14} /></button>
+            <span className="px-3 py-2 text-sm font-serif w-8 text-center">{quantity}</span>
+            <button onClick={increment} className="px-3 py-2 hover:bg-stone-100 text-stone-600"><Plus size={14} /></button>
+          </div>
+        </div>
+
         <button 
-          onClick={() => onConfirm(product, selectedVariant)}
+          onClick={() => onConfirm(product, selectedVariant, quantity)}
           className="w-full bg-stone-900 text-white py-4 uppercase tracking-[0.2em] text-xs font-bold hover:bg-stone-700 transition-colors"
         >
-          Ajouter au panier - {parseInt(selectedVariant?.price?.amount || 0)} €
+          Ajouter au panier - {finalPrice} €
         </button>
       </div>
     </div>
@@ -434,7 +445,7 @@ const InstagramSection = () => {
   );
 };
 
-const CartDrawer = ({ isOpen, onClose, items }) => (
+const CartDrawer = ({ isOpen, onClose, items, onRemove }) => (
   <>
     <div className={`fixed inset-0 z-[60] bg-stone-900/20 backdrop-blur-sm transition-opacity duration-500 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={onClose} />
     <div className={`fixed inset-y-0 right-0 w-full md:w-[450px] bg-[#FDFBF7] z-[70] shadow-2xl transform transition-transform duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] ${isOpen ? 'translate-x-0' : 'translate-x-full'} flex flex-col`}>
@@ -464,7 +475,7 @@ const CartDrawer = ({ isOpen, onClose, items }) => (
                 </div>
                 <div className="flex justify-between items-end">
                   <span className="text-stone-900 font-medium text-sm">{parseInt(item.priceRange?.minVariantPrice?.amount)} €</span>
-                  <button className="text-xs text-stone-400 underline hover:text-red-900">Retirer</button>
+                  <button onClick={() => onRemove(index)} className="text-xs text-stone-400 underline hover:text-red-900">Retirer</button>
                 </div>
               </div>
             </div>
@@ -559,15 +570,25 @@ export default function App() {
       setSelectingProduct(product); // Ouvre la modal
     } else {
       // Ajout direct (une seule variante par défaut)
-      addToCart(product, variants[0]?.node);
+      addToCart(product, variants[0]?.node, 1);
     }
   };
 
-  const addToCart = (product, variant) => {
-    // On ajoute le produit avec l'info de la variante choisie
-    setCartItems([...cartItems, { ...product, selectedVariant: variant, selectedVariantId: variant?.id }]);
+  const addToCart = (product, variant, quantity = 1) => {
+    // Créer 'quantity' exemplaires du produit
+    const newItems = Array.from({ length: quantity }, () => ({
+      ...product,
+      selectedVariant: variant,
+      selectedVariantId: variant?.id
+    }));
+    
+    setCartItems([...cartItems, ...newItems]);
     setCartOpen(true);
     setSelectingProduct(null); // Ferme la modal
+  };
+
+  const removeFromCart = (indexToRemove) => {
+    setCartItems(cartItems.filter((_, index) => index !== indexToRemove));
   };
 
   const handleCollectionSelect = (collectionId) => {
@@ -620,7 +641,7 @@ export default function App() {
       
       <Footer logo={storeData.shop?.name} />
       
-      <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} items={cartItems} />
+      <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} items={cartItems} onRemove={removeFromCart} />
       
       {/* MODAL DE SÉLECTION */}
       {selectingProduct && (
