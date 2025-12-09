@@ -33,7 +33,7 @@ const TEXTS = {
       text: "Jute, rotin, osier. Tressés à la main pour apporter chaleur et texture."
     },
     {
-      title: "Artisanat Local",
+      title: "Artisanat",
       text: "Chaque pièce est unique, façonnée par des mains expertes."
     }
   ],
