@@ -56,12 +56,10 @@ const TEXTS = {
 const proceedToCheckout = (cartItems) => {
   if (cartItems.length === 0) return;
   const itemsString = cartItems.map(item => {
-    // L'item dans le panier contient maintenant le variantId spécifique choisi
     let variantId = item.selectedVariantId?.split('/').pop(); 
-    // Fallback si ancienne structure
     if (!variantId) variantId = item.variants?.edges?.[0]?.node?.id?.split('/').pop();
     if (!variantId) variantId = item.id.split('/').pop();
-    return `${variantId}:1`; 
+    return `${variantId}:${item.quantity || 1}`;
   }).join(',');
   window.location.href = `https://${SHOPIFY_DOMAIN}/cart/${itemsString}`;
 };
@@ -147,13 +145,13 @@ const Navbar = ({ logo, cartCount, onOpenCart, isArticleView, onBack }) => {
 
   if (isArticleView) {
     return (
-      <nav className="fixed top-0 left-0 w-full z-50 bg-white border-b border-stone-100 py-4">
+      <nav className="fixed top-0 left-0 w-full z-50 bg-white/95 backdrop-blur-md border-b border-stone-100 py-4 transition-all">
         <div className="max-w-[1200px] mx-auto px-6 flex justify-between items-center">
-          <button onClick={onBack} className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold hover:text-stone-500 transition-colors">
-            <ArrowLeft size={16} /> Retour
+          <button onClick={onBack} className="flex items-center gap-3 text-[10px] uppercase tracking-widest font-bold hover:text-stone-500 transition-colors group">
+            <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Retour
           </button>
           <div className="text-xl font-serif font-bold tracking-[0.15em] text-stone-900">{logo}</div>
-          <div className="w-16"></div>
+          <div className="w-16"></div> {/* Spacer équilibrant */}
         </div>
       </nav>
     );
@@ -209,55 +207,38 @@ const HeroSection = ({ onScroll }) => (
   </div>
 );
 
-// MODAL DE SÉLECTION DE VARIANTE (CORRIGÉE & DYNAMIQUE + QUANTITÉ)
 const VariantSelector = ({ product, onClose, onConfirm }) => {
-  // Sélectionne la première variante par défaut
   const [selectedVariant, setSelectedVariant] = useState(product.variants.edges[0]?.node);
   const [quantity, setQuantity] = useState(1);
-
   const increment = () => setQuantity(q => q + 1);
   const decrement = () => setQuantity(q => (q > 1 ? q - 1 : 1));
-
   const finalPrice = parseInt(selectedVariant?.price?.amount || 0) * quantity;
 
   return (
     <div className="fixed inset-0 z-[80] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
       <div className="bg-[#FDFBF7] w-full max-w-md shadow-2xl p-8 relative" onClick={(e) => e.stopPropagation()}>
         <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900"><X size={20} /></button>
-        
         <div className="flex gap-6 mb-8">
           <div className="w-24 h-32 bg-stone-100 flex-shrink-0 overflow-hidden">
-            <img 
-              src={selectedVariant?.image?.url || product.images?.edges?.[0]?.node?.url} 
-              alt={product.title} 
-              className="w-full h-full object-cover" 
-            />
+            <img src={selectedVariant?.image?.url || product.images?.edges?.[0]?.node?.url} alt={product.title} className="w-full h-full object-cover" />
           </div>
           <div>
             <h3 className="font-serif text-xl text-stone-900 mb-2">{product.title}</h3>
             <p className="text-stone-500 text-xs uppercase tracking-widest mb-3">{product.productType}</p>
-            <p className="text-stone-900 font-medium text-lg">
-              {parseInt(selectedVariant?.price?.amount || 0)} €
-            </p>
+            <p className="text-stone-900 font-medium text-lg">{parseInt(selectedVariant?.price?.amount || 0)} €</p>
           </div>
         </div>
-
         <div className="mb-6">
           <label className="text-[10px] uppercase tracking-[0.2em] text-stone-500 block mb-3 font-bold">Variantes</label>
           <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
             {product.variants.edges.map(({ node }) => (
-              <button
-                key={node.id}
-                onClick={() => setSelectedVariant(node)}
-                className={`w-full text-left px-4 py-3 text-sm font-serif border transition-all flex justify-between items-center ${selectedVariant?.id === node.id ? 'border-stone-900 bg-white shadow-sm' : 'border-stone-200 hover:border-stone-400'}`}
-              >
+              <button key={node.id} onClick={() => setSelectedVariant(node)} className={`w-full text-left px-4 py-3 text-sm font-serif border transition-all flex justify-between items-center ${selectedVariant?.id === node.id ? 'border-stone-900 bg-white shadow-sm' : 'border-stone-200 hover:border-stone-400'}`}>
                 <span>{node.title}</span>
                 {selectedVariant?.id === node.id && <div className="w-2 h-2 bg-stone-900 rounded-full"></div>}
               </button>
             ))}
           </div>
         </div>
-
         <div className="flex items-center justify-between mb-8 border-t border-stone-200 pt-6">
           <label className="text-[10px] uppercase tracking-[0.2em] text-stone-500 font-bold">Quantité</label>
           <div className="flex items-center border border-stone-300">
@@ -266,11 +247,7 @@ const VariantSelector = ({ product, onClose, onConfirm }) => {
             <button onClick={increment} className="px-3 py-2 hover:bg-stone-100 text-stone-600"><Plus size={14} /></button>
           </div>
         </div>
-
-        <button 
-          onClick={() => onConfirm(product, selectedVariant, quantity)}
-          className="w-full bg-stone-900 text-white py-4 uppercase tracking-[0.2em] text-xs font-bold hover:bg-stone-700 transition-colors"
-        >
+        <button onClick={() => onConfirm(product, selectedVariant, quantity)} className="w-full bg-stone-900 text-white py-4 uppercase tracking-[0.2em] text-xs font-bold hover:bg-stone-700 transition-colors">
           Ajouter au panier - {finalPrice} €
         </button>
       </div>
@@ -278,20 +255,61 @@ const VariantSelector = ({ product, onClose, onConfirm }) => {
   );
 };
 
+// COMPOSANT ARTICLE : STYLE MAGAZINE HAUT DE GAMME
 const ArticleView = ({ article }) => {
+  // SCROLL AUTOMATIQUE VERS LE HAUT À L'OUVERTURE
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+
   if (!article) return null;
   const node = article.node;
+
   return (
-    <div className="bg-white min-h-screen pt-32 pb-24 animate-fade-in">
-      <article className="max-w-[800px] mx-auto px-6">
-        <div className="text-center mb-12">
-          <span className="text-[10px] uppercase tracking-[0.3em] text-stone-400 block mb-4">{new Date(node.publishedAt).toLocaleDateString()} — {node.authorV2?.name || "La Maison"}</span>
-          <h1 className="text-4xl md:text-5xl font-serif text-stone-900 leading-tight mb-8">{node.title}</h1>
-          <div className="w-12 h-[1px] bg-stone-300 mx-auto"></div>
+    <div className="bg-white min-h-screen pt-32 pb-24 animate-fade-in selection:bg-stone-200">
+      
+      {/* En-tête Article Centré & Élégant */}
+      <div className="max-w-4xl mx-auto px-6 text-center mb-16">
+        <div className="flex justify-center items-center gap-4 mb-8">
+           <div className="h-[1px] w-8 bg-stone-300"></div>
+           <span className="text-[10px] uppercase tracking-[0.3em] text-stone-500 font-sans font-medium">
+             {new Date(node.publishedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+           </span>
+           <div className="h-[1px] w-8 bg-stone-300"></div>
         </div>
-        {node.image && <div className="mb-16"><img src={node.image.url} alt={node.title} className="w-full h-auto object-cover shadow-sm" /></div>}
-        <div className="prose prose-stone prose-lg mx-auto font-serif text-stone-600 leading-loose first-letter:text-5xl first-letter:font-serif first-letter:float-left first-letter:mr-3 first-letter:mt-[-10px]" dangerouslySetInnerHTML={{ __html: node.contentHtml }} />
-        <div className="mt-20 pt-10 border-t border-stone-100 text-center"><p className="text-xs uppercase tracking-widest text-stone-400">La Maison Ibizienne</p></div>
+        <h1 className="text-5xl md:text-7xl font-serif text-stone-900 leading-[1.1] mb-8">
+          {node.title}
+        </h1>
+        <div className="flex justify-center items-center gap-2 text-xs font-serif italic text-stone-400">
+            <span>Par {node.authorV2?.name || "La Rédaction"}</span>
+        </div>
+      </div>
+
+      {/* Image Large "Cinéma" */}
+      {node.image && (
+        <div className="max-w-[1400px] mx-auto mb-20 px-4 md:px-0">
+          <div className="relative aspect-[21/9] overflow-hidden">
+            <img src={node.image.url} alt={node.title} className="w-full h-full object-cover parallax-effect" />
+          </div>
+          <p className="text-right text-[9px] text-stone-400 mt-2 uppercase tracking-widest italic pr-2">La Maison Ibizienne Journal</p>
+        </div>
+      )}
+
+      {/* Contenu Éditorial - Colonne Centrée & Lettrine */}
+      <article className="max-w-2xl mx-auto px-6">
+        <div 
+          className="prose prose-stone prose-lg prose-headings:font-serif prose-headings:font-normal prose-p:font-light prose-p:leading-loose prose-p:text-stone-600 prose-a:text-stone-900 prose-a:no-underline prose-a:border-b prose-a:border-stone-300 hover:prose-a:border-stone-900 prose-img:rounded-sm
+          first-letter:text-7xl first-letter:font-serif first-letter:text-stone-900 first-letter:float-left first-letter:mr-4 first-letter:mt-[-6px]"
+          dangerouslySetInnerHTML={{ __html: node.contentHtml }}
+        />
+        
+        {/* Signature & Partage */}
+        <div className="mt-24 pt-12 border-t border-stone-100 flex flex-col items-center">
+            <p className="font-serif italic text-stone-400 text-lg">"L'art de vivre est un voyage."</p>
+            <div className="flex gap-4 mt-8">
+                <span className="text-[10px] uppercase tracking-widest border border-stone-200 px-4 py-2 text-stone-400 cursor-pointer hover:border-stone-900 hover:text-stone-900 transition-all">Partager</span>
+            </div>
+        </div>
       </article>
     </div>
   );
@@ -382,31 +400,37 @@ const MaterialsSection = () => (
 const JournalSection = ({ articles, onArticleClick }) => {
   if (!articles || articles.length === 0) return null;
   return (
-    <section id="journal" className="py-32 bg-[#F5F2EB]">
+    <section id="journal" className="py-40 bg-[#FDFBF7] border-t border-stone-100">
       <div className="max-w-[1600px] mx-auto px-6 md:px-12">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-20 gap-6 border-b border-stone-300 pb-8">
-          <div>
-            <span className="text-[10px] uppercase tracking-[0.3em] text-stone-500 font-serif italic block mb-4">{TEXTS.sections.journal_subtitle}</span>
-            <h2 className="text-5xl font-serif text-stone-900">{TEXTS.sections.journal_title}</h2>
-          </div>
-          <button className="text-xs uppercase tracking-widest text-stone-600 hover:text-stone-900 transition-colors font-serif">{TEXTS.sections.journal_link}</button>
+        <div className="text-center mb-32">
+          <span className="text-[10px] uppercase tracking-[0.4em] text-stone-400 font-medium block mb-6">{TEXTS.sections.journal_subtitle}</span>
+          <h2 className="text-6xl font-serif text-stone-900 font-light">{TEXTS.sections.journal_title}</h2>
+          <div className="w-px h-16 bg-stone-300 mx-auto mt-8"></div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-12 gap-y-24">
           {articles.map((article, idx) => {
             const node = article.node;
             return (
-              <div key={idx} onClick={() => onArticleClick(article)} className="group cursor-pointer block">
-                <div className="relative aspect-[4/3] overflow-hidden mb-8 bg-[#EBE5DE]">
-                  <img src={node.image?.url} alt={node.title} className="w-full h-full object-cover transition-transform duration-[1.5s] group-hover:scale-105 opacity-95 group-hover:opacity-100" />
+              <div key={idx} onClick={() => onArticleClick(article)} className="group cursor-pointer flex flex-col items-center text-center">
+                <div className="relative aspect-[3/4] w-full overflow-hidden mb-10 bg-[#F0EBE5]">
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-700 z-10" />
+                  <img src={node.image?.url} alt={node.title} className="w-full h-full object-cover transition-transform duration-[1.8s] ease-out group-hover:scale-105 opacity-95" />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-20">
+                    <span className="bg-white/95 backdrop-blur-sm text-stone-900 px-8 py-3 uppercase text-[10px] tracking-[0.25em] font-bold shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">Lire</span>
+                  </div>
                 </div>
-                <div className="pr-6">
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-stone-500 block mb-3 font-serif">{new Date(node.publishedAt).toLocaleDateString()}</span>
-                  <h3 className="text-2xl font-serif text-stone-900 mb-4 leading-tight group-hover:text-stone-600 transition-colors">{node.title}</h3>
-                  <p className="text-stone-600 font-serif text-sm italic leading-relaxed line-clamp-3">{node.excerpt}</p>
+                <div className="px-4 max-w-sm">
+                  <span className="text-[9px] uppercase tracking-[0.25em] text-stone-400 block mb-4 font-sans">{new Date(node.publishedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                  <h3 className="text-2xl md:text-3xl font-serif text-stone-900 mb-6 leading-tight group-hover:text-stone-600 transition-colors">{node.title}</h3>
+                  <p className="text-stone-500 font-serif text-sm italic leading-loose line-clamp-3">{node.excerpt}</p>
                 </div>
               </div>
             );
           })}
+        </div>
+        <div className="text-center mt-32">
+             <button className="text-[10px] uppercase tracking-[0.2em] text-stone-400 hover:text-stone-900 transition-colors border-b border-transparent hover:border-stone-900 pb-1">{TEXTS.sections.journal_link}</button>
         </div>
       </div>
     </section>
@@ -470,11 +494,11 @@ const CartDrawer = ({ isOpen, onClose, items, onRemove }) => (
               <div className="flex-1 py-1 flex flex-col justify-between">
                 <div>
                   <h4 className="font-serif text-base text-stone-900 leading-tight mb-2">{item.title}</h4>
-                  {/* On affiche le nom de la variante choisie */}
                   <p className="text-stone-400 text-[10px] uppercase tracking-widest font-serif">{item.selectedVariant?.title !== 'Default Title' ? item.selectedVariant?.title : item.productType}</p>
+                  <p className="text-stone-400 text-[10px] uppercase tracking-widest font-serif mt-1">Qté: {item.quantity || 1}</p>
                 </div>
                 <div className="flex justify-between items-end">
-                  <span className="text-stone-900 font-medium text-sm">{parseInt(item.priceRange?.minVariantPrice?.amount)} €</span>
+                  <span className="text-stone-900 font-medium text-sm">{parseInt(item.priceRange?.minVariantPrice?.amount) * (item.quantity || 1)} €</span>
                   <button onClick={() => onRemove(index)} className="text-xs text-stone-400 underline hover:text-red-900">Retirer</button>
                 </div>
               </div>
@@ -486,7 +510,7 @@ const CartDrawer = ({ isOpen, onClose, items, onRemove }) => (
         <div className="p-8 bg-[#F5F2EB]">
           <div className="flex justify-between items-center mb-6 text-xl font-serif text-stone-900">
             <span>Total</span>
-            <span>{items.reduce((acc, item) => acc + parseInt(item.priceRange?.minVariantPrice?.amount || 0), 0)} €</span>
+            <span>{items.reduce((acc, item) => acc + (parseInt(item.priceRange?.minVariantPrice?.amount || 0) * (item.quantity || 1)), 0)} €</span>
           </div>
           <button onClick={() => proceedToCheckout(items)} className="w-full bg-stone-900 text-[#FDFBF7] py-5 uppercase tracking-[0.2em] text-xs font-bold hover:bg-stone-700 transition-colors">
             Paiement
@@ -537,21 +561,17 @@ export default function App() {
   const [activeProducts, setActiveProducts] = useState([]); 
   const [activeCollectionName, setActiveCollectionName] = useState("");
   const [activeArticle, setActiveArticle] = useState(null);
-  
-  // NOUVEAU STATE : Produit en cours de sélection de variante
   const [selectingProduct, setSelectingProduct] = useState(null);
 
   useEffect(() => {
     fetchShopifyData().then((data) => {
       const allData = data || FALLBACK_DATA;
       setStoreData(allData);
-      
       const collections = allData.collections?.edges || [];
       const validCollections = collections.filter(c => {
         const title = c.node.title.toLowerCase();
         return !['coaching', 'service', 'homepage', 'frontpage'].some(bad => title.includes(bad));
       });
-
       if (validCollections.length > 0) {
         setActiveProducts(validCollections[0].node.products.edges);
         setActiveCollectionName(validCollections[0].node.title);
@@ -562,29 +582,24 @@ export default function App() {
 
   const scrollToCollections = () => { document.getElementById('collections')?.scrollIntoView({ behavior: 'smooth' }); };
   
-  // MODIFICATION DE LA FONCTION D'AJOUT
   const handleAddToCartClick = (product) => {
     const variants = product.variants?.edges || [];
-    // Si plus d'une variante, ou si la seule variante n'est pas "Default Title"
     if (variants.length > 1 || (variants.length === 1 && variants[0].node.title !== "Default Title")) {
-      setSelectingProduct(product); // Ouvre la modal
+      setSelectingProduct(product); 
     } else {
-      // Ajout direct (une seule variante par défaut)
       addToCart(product, variants[0]?.node, 1);
     }
   };
 
   const addToCart = (product, variant, quantity = 1) => {
-    // Créer 'quantity' exemplaires du produit
-    const newItems = Array.from({ length: quantity }, () => ({
-      ...product,
-      selectedVariant: variant,
-      selectedVariantId: variant?.id
-    }));
-    
-    setCartItems([...cartItems, ...newItems]);
+    setCartItems([...cartItems, { 
+      ...product, 
+      selectedVariant: variant, 
+      selectedVariantId: variant?.id,
+      quantity: quantity 
+    }]);
     setCartOpen(true);
-    setSelectingProduct(null); // Ferme la modal
+    setSelectingProduct(null);
   };
 
   const removeFromCart = (indexToRemove) => {
@@ -624,32 +639,20 @@ export default function App() {
   return (
     <div className="font-sans text-stone-900 bg-[#FDFBF7] min-h-screen selection:bg-stone-200">
       <Navbar logo={storeData.shop?.name} cartCount={cartItems.length} onOpenCart={() => setCartOpen(true)} />
-      
       <main>
         <HeroSection onScroll={scrollToCollections} />
         <CollectionsGrid collections={collections} onCollectionSelect={handleCollectionSelect} />
         <MaterialsSection />
-        
         <div id="new-in">
-          {/* On passe la nouvelle fonction handleAddToCartClick */}
           <ProductGrid products={activeProducts} title={activeCollectionName} onAdd={handleAddToCartClick} />
         </div>
-
         <JournalSection articles={blogArticles} onArticleClick={setActiveArticle} />
         <InstagramSection />
       </main>
-      
       <Footer logo={storeData.shop?.name} />
-      
       <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} items={cartItems} onRemove={removeFromCart} />
-      
-      {/* MODAL DE SÉLECTION */}
       {selectingProduct && (
-        <VariantSelector 
-          product={selectingProduct} 
-          onClose={() => setSelectingProduct(null)} 
-          onConfirm={addToCart} 
-        />
+        <VariantSelector product={selectingProduct} onClose={() => setSelectingProduct(null)} onConfirm={addToCart} />
       )}
     </div>
   );
