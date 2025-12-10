@@ -28,8 +28,18 @@ const TailwindConfig = `
 `;
 
 // Paramètres Shopify API (Nécessitent un jeton d'accès et un domaine valides)
-const STOREFRONT_ACCESS_TOKEN = '4b2746c099f9603fde4f9639336a235d'; 
-const SHOPIFY_DOMAIN = '91eg2s-ah.myshopify.com'; 
+// SÉCURISATION POUR LA PRODUCTION : Utiliser les variables d'environnement.
+const DEFAULT_ACCESS_TOKEN = '4b2746c099f9603fde4f9639336a235d'; 
+const DEFAULT_SHOPIFY_DOMAIN = '91eg2s-ah.myshopify.com';
+
+const STOREFRONT_ACCESS_TOKEN = (typeof process !== 'undefined' && process.env.REACT_APP_SHOPIFY_STOREFRONT_ACCESS_TOKEN) 
+  ? process.env.REACT_APP_SHOPIFY_STOREFRONT_ACCESS_TOKEN 
+  : DEFAULT_ACCESS_TOKEN;
+
+const SHOPIFY_DOMAIN = (typeof process !== 'undefined' && process.env.REACT_APP_SHOPIFY_DOMAIN) 
+  ? process.env.REACT_APP_SHOPIFY_DOMAIN 
+  : DEFAULT_SHOPIFY_DOMAIN;
+
 const API_VERSION = '2024-01';
 
 
@@ -72,8 +82,8 @@ const SITE_CONFIG = {
   
   // --- SECTION COACHING / SERVICE (Bloc image/texte) ---
   COACHING: {
-    // Image de fond pour la section Coaching
-    IMAGE_URL: "https://images.unsplash.com/photo-1627885060424-699741c3057e?q=80&w=1200&auto=format&fit=crop", 
+    // Nouvelle image de fond qui représente la consultation/décoration
+    IMAGE_URL: "https://images.unsplash.com/photo-1544078427-02484a9e96c4?q=80&w=1200&auto=format&fit=crop", 
     // Sous-titre
     SURTITLE: "Notre Expertise",
     // Titre principal
@@ -90,23 +100,21 @@ const SITE_CONFIG = {
     BUTTON_TEXT: "Découvrir le Coaching"
   },
 
-  // --- SECTION INSTAGRAM / RÉSEAUX SOCIAUX ---
-  INSTAGRAM: {
-    // Lien externe vers le profil Instagram
-    URL: "https://www.instagram.com/lamaisonibizienne", 
-    // Lien externe vers le profil Facebook
+  // --- LIENS SOCIAUX ET EXTERNES (Utilisés dans le Footer) ---
+  SOCIAL_LINKS: {
+    // Liens de contact et d'informations
+    CONTACT_URL: "#", // Simuler le lien Contact
+    DELIVERY_URL: "#", // Simuler le lien Livraison
+    PHILOSOPHY_URL: "#", // Simuler le lien Philosophie
+    
+    // Réseaux sociaux
+    INSTAGRAM_URL: "https://www.instagram.com/lamaisonibizienne", 
+    INSTAGRAM_HANDLE: "@lamaisonibizienne",
     FACEBOOK_URL: "https://www.facebook.com/lamaisonibizienne", 
-    // Liste des URLs des images de posts (6 images)
-    POSTS: [
-      "https://www.instagram.com/p/DMiL1scoznT/", 
-      "https://www.instagram.com/p/DMcqWG0IadK/", 
-      "https://www.instagram.com/p/DManEXLo02w/", 
-      "https://www.instagram.com/p/DG3jCL4owNB/", 
-      "https://www.instagram.com/p/DGxUMd2oNvX/", 
-      "https://www.instagram.com/p/DGsaZmjIqF1/"  
-    ]
+    // Lien TikTok ajouté
+    TIKTOK_URL: "https://www.tiktok.com/@la.maison.ibizienne",
   },
-
+  
   // --- TEXTES DIVERS / NAVIGATION ---
   SECTIONS: {
     UNIVERS: "Nos Univers",
@@ -181,7 +189,65 @@ const DESIGN_CONFIG = {
 
 
 // ==============================================================================
-// 4. LOGIQUE API
+// 4. HOOKS ET LOGIQUE D'ANIMATION
+// ==============================================================================
+
+/**
+ * Hook personnalisé pour observer si un élément est visible dans la fenêtre.
+ */
+const useIntersectionObserver = (options) => {
+  const [isIntersecting, setIsIntersecting] = useState(false);
+  const targetRef = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      // Si l'élément entre dans le viewport, on active l'intersection
+      if (entry.isIntersecting) {
+        setIsIntersecting(true);
+        // Optionnel: On peut déconnecter l'observateur après la première apparition
+        // observer.unobserve(entry.target); 
+      }
+    }, options);
+
+    if (targetRef.current) {
+      observer.observe(targetRef.current);
+    }
+
+    return () => {
+      if (targetRef.current) {
+        observer.unobserve(targetRef.current);
+      }
+    };
+  }, [options]);
+
+  return [targetRef, isIntersecting];
+};
+
+/**
+ * Composant enveloppant qui applique l'effet de fade-in et de légère translation
+ * lorsque la section devient visible.
+ */
+const ScrollFadeIn = ({ children, delay = 0, threshold = 0.1, className = "" }) => {
+  const [ref, isVisible] = useIntersectionObserver({ threshold: threshold });
+  
+  const baseClasses = 'transition-all duration-1000 ease-out';
+  const visibleClasses = 'opacity-100 translate-y-0 scale-100';
+  const hiddenClasses = 'opacity-0 translate-y-8 scale-[0.98]';
+
+  return (
+    <div
+      ref={ref}
+      className={`${baseClasses} ${className} ${isVisible ? visibleClasses : hiddenClasses}`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  );
+};
+
+
+// ==============================================================================
+// 6. LOGIQUE API
 // ==============================================================================
 
 const proceedToCheckout = (cartItems) => {
@@ -253,18 +319,26 @@ async function fetchShopifyData() {
   `;
 
   try {
-    const response = await fetch(`https://${SHOPIFY_DOMAIN}/api/${API_VERSION}/graphql.json`, {
+    // Utiliser les constantes globales (sécurisées par variables d'env en prod)
+    const storefrontAccessToken = STOREFRONT_ACCESS_TOKEN;
+    const shopifyDomain = SHOPIFY_DOMAIN;
+
+    if (!shopifyDomain || storefrontAccessToken === DEFAULT_ACCESS_TOKEN) {
+      console.warn("ATTENTION: Les identifiants Shopify sont par défaut. Les données produits/collections pourraient ne pas être à jour. EN PRODUCTION, configurez les variables d'environnement.");
+    }
+
+    const response = await fetch(`https://${shopifyDomain}/api/${API_VERSION}/graphql.json`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Shopify-Storefront-Access-Token': STOREFRONT_ACCESS_TOKEN,
+        'X-Shopify-Storefront-Access-Token': storefrontAccessToken,
       },
       body: JSON.stringify({ query }),
     });
     const json = await response.json();
     return json.data;
   } catch (error) { 
-    console.error("Error fetching Shopify data:", error);
+    console.error("Erreur lors de la récupération des données Shopify:", error);
     return null; 
   }
 }
@@ -272,7 +346,7 @@ async function fetchShopifyData() {
 const FALLBACK_DATA = { shop: { name: "LA MAISON" }, collections: { edges: [] }, products: { edges: [] } };
 
 // ==============================================================================
-// 5. COMPOSANTS DESIGN
+// 7. COMPOSANTS DESIGN
 // ==============================================================================
 
 /**
@@ -280,6 +354,7 @@ const FALLBACK_DATA = { shop: { name: "LA MAISON" }, collections: { edges: [] },
  */
 const Carousel = ({ title, subtitle, anchorId, itemWidth, children }) => {
   const scrollContainerRef = useRef(null);
+  const [ref, isVisible] = useIntersectionObserver({ threshold: 0.2 });
 
   const scroll = (direction) => {
     if (scrollContainerRef.current) {
@@ -298,34 +373,36 @@ const Carousel = ({ title, subtitle, anchorId, itemWidth, children }) => {
   return (
     <section id={anchorId} className="py-24 bg-finca-light">
       <div className="max-w-[1800px] mx-auto px-6 md:px-12">
-        <div className="flex justify-between items-end mb-12 md:mb-16">
-          <div>
-            {subtitle && (
-              <span className="text-[10px] font-serif tracking-[0.3em] text-stone-400 uppercase mb-3 block">
-                {subtitle}
-              </span>
-            )}
-            <h2 className="text-3xl md:text-4xl font-serif text-stone-900 italic font-light">
-              {title}
-            </h2>
+        <ScrollFadeIn threshold={0.1}>
+          <div className="flex justify-between items-end mb-12 md:mb-16">
+            <div>
+              {subtitle && (
+                <span className="text-[10px] font-serif tracking-[0.3em] text-stone-400 uppercase mb-3 block">
+                  {subtitle}
+                </span>
+              )}
+              <h2 className="text-3xl md:text-4xl font-serif text-stone-900 italic font-light">
+                {title}
+              </h2>
+            </div>
+            <div className="flex gap-4">
+              <button
+                onClick={() => scroll('left')}
+                className="p-3 border border-stone-200 text-stone-900 hover:bg-stone-900 hover:text-white transition-colors rounded-full"
+                aria-label="Défiler à gauche"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                onClick={() => scroll('right')}
+                className="p-3 border border-stone-200 text-stone-900 hover:bg-stone-900 hover:text-white transition-colors rounded-full"
+                aria-label="Défiler à droite"
+              >
+                <ChevronRight size={16} /> {/* FIX: Correction de la syntaxe JSX ici */}
+              </button>
+            </div>
           </div>
-          <div className="flex gap-4">
-            <button
-              onClick={() => scroll('left')}
-              className="p-3 border border-stone-200 text-stone-900 hover:bg-stone-900 hover:text-white transition-colors rounded-full"
-              aria-label="Défiler à gauche"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <button
-              onClick={() => scroll('right')}
-              className="p-3 border border-stone-200 text-stone-900 hover:bg-stone-900 hover:text-white transition-colors rounded-full"
-              aria-label="Défiler à droite"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
+        </ScrollFadeIn>
 
         {/* Conteneur de défilement horizontal (Slide) */}
         <div
@@ -340,11 +417,11 @@ const Carousel = ({ title, subtitle, anchorId, itemWidth, children }) => {
           onMouseEnter={() => scrollContainerRef.current.style.boxShadow = 'inset 0 -5px 10px rgba(0,0,0,0.05)'}
           onMouseLeave={() => scrollContainerRef.current.style.boxShadow = 'none'}
         >
-          {React.Children.map(children, (child) => (
-            // Chaque élément doit être un snap point et avoir la largeur définie par itemWidth
-            <div className={`flex-shrink-0 snap-center ${itemWidth}`} key={child.key}>
+          {React.Children.map(children, (child, index) => (
+            // Appliquer l'effet de fade-in sur chaque carte
+            <ScrollFadeIn key={index} delay={index * 100} threshold={0.5} className={`flex-shrink-0 snap-center ${itemWidth}`}>
               {child}
-            </div>
+            </ScrollFadeIn>
           ))}
         </div>
       </div>
@@ -689,36 +766,38 @@ const ArticleView = ({ article }) => {
 // NOUVEAU: Section pour le service/coaching
 const CoachingSection = () => (
   <section id="coaching" className="py-32 bg-finca-light border-t border-stone-200">
-    <div className="max-w-5xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-      {/* Image / Background graphic */}
-      <div className="relative aspect-[4/3] bg-finca-medium rounded-lg shadow-xl overflow-hidden">
-        <img
-          src={SITE_CONFIG.COACHING.IMAGE_URL} // Utilisation de l'URL du SITE_CONFIG
-          alt="Consultation et design d'intérieur"
-          className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity duration-500"
-        />
-        <div className="absolute inset-0 bg-stone-900/10" />
-      </div>
+    <ScrollFadeIn threshold={0.3}>
+      <div className="max-w-5xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        {/* Image / Background graphic */}
+        <div className="relative aspect-[4/3] bg-finca-medium rounded-lg shadow-xl overflow-hidden">
+          <img
+            src={SITE_CONFIG.COACHING.IMAGE_URL} // Nouvelle image
+            alt="Consultation et design d'intérieur"
+            className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity duration-500"
+          />
+          <div className="absolute inset-0 bg-stone-900/10" />
+        </div>
 
-      {/* Content */}
-      <div className="text-stone-900 lg:pl-10 py-6">
-        <span className="text-[10px] font-serif tracking-[0.3em] text-stone-400 uppercase mb-4 block">{SITE_CONFIG.COACHING.SURTITLE}</span>
-        <h2 className="text-4xl md:text-5xl font-serif leading-tight mb-8">
-          {SITE_CONFIG.COACHING.TITLE}
-        </h2>
-        <p className="font-light text-lg mb-6 text-stone-600">
-          {SITE_CONFIG.COACHING.DESCRIPTION}
-        </p>
-        <ul className="space-y-3 text-stone-500 text-sm mb-10">
-          {SITE_CONFIG.COACHING.ADVANTAGES.map((text, index) => (
-             <li key={index} className="flex items-center gap-3"><ChevronRight size={16} className="text-stone-900 flex-shrink-0" /> {text}</li>
-          ))}
-        </ul>
-        <button className="group relative overflow-hidden bg-stone-900 text-finca-light px-10 py-4 uppercase tracking-[0.25em] text-[10px] font-bold transition-all hover:bg-stone-700 shadow-lg rounded-sm">
-          <span className="relative z-10">{SITE_CONFIG.COACHING.BUTTON_TEXT}</span>
-        </button>
+        {/* Content */}
+        <div className="text-stone-900 lg:pl-10 py-6">
+          <span className="text-[10px] font-serif tracking-[0.3em] text-stone-400 uppercase mb-4 block">{SITE_CONFIG.COACHING.SURTITLE}</span>
+          <h2 className="text-4xl md:text-5xl font-serif leading-tight mb-8">
+            {SITE_CONFIG.COACHING.TITLE}
+          </h2>
+          <p className="font-light text-lg mb-6 text-stone-600">
+            {SITE_CONFIG.COACHING.DESCRIPTION}
+          </p>
+          <ul className="space-y-3 text-stone-500 text-sm mb-10">
+            {SITE_CONFIG.COACHING.ADVANTAGES.map((text, index) => (
+              <li key={index} className="flex items-center gap-3"><ChevronRight size={16} className="text-stone-900 flex-shrink-0" /> {text}</li>
+            ))}
+          </ul>
+          <button className="group relative overflow-hidden bg-stone-900 text-finca-light px-10 py-4 uppercase tracking-[0.25em] text-[10px] font-bold transition-all hover:bg-stone-700 shadow-lg rounded-sm">
+            <span className="relative z-10">{SITE_CONFIG.COACHING.BUTTON_TEXT}</span>
+          </button>
+        </div>
       </div>
-    </div>
+    </ScrollFadeIn>
   </section>
 );
 
@@ -805,14 +884,16 @@ const ProductCarousel = ({ products, title, onAdd }) => {
 
 const MaterialsSection = () => (
   <section className="py-24 bg-finca-medium border-t border-b border-stone-200">
-    <div className="max-w-[1600px] mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
-      {SITE_CONFIG.MATERIALS.map((item, index) => (
-        <div key={index} className="flex flex-col items-center">
-          <h3 className="font-serif text-xl mb-3 text-stone-900 italic">{item.TITLE}</h3>
-          <p className="text-sm text-stone-600 font-light leading-relaxed max-w-xs">{item.TEXT}</p>
-        </div>
-      ))}
-    </div>
+    <ScrollFadeIn threshold={0.2}>
+      <div className="max-w-[1600px] mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
+        {SITE_CONFIG.MATERIALS.map((item, index) => (
+          <div key={index} className="flex flex-col items-center">
+            <h3 className="font-serif text-xl mb-3 text-stone-900 italic">{item.TITLE}</h3>
+            <p className="text-sm text-stone-600 font-light leading-relaxed max-w-xs">{item.TEXT}</p>
+          </div>
+        ))}
+      </div>
+    </ScrollFadeIn>
   </section>
 );
 
@@ -859,34 +940,9 @@ const JournalCarousel = ({ articles, onArticleClick }) => {
   );
 };
 
-const InstagramSection = () => {
-  // Les posts sont maintenant importés de SITE_CONFIG
-  const posts = SITE_CONFIG.INSTAGRAM.POSTS;
-  const instagramUrl = SITE_CONFIG.INSTAGRAM.URL;
-  const facebookUrl = SITE_CONFIG.INSTAGRAM.FACEBOOK_URL;
+// Suppression de InstagramSection (Remplacé par l'intégration dans le Footer)
+// const InstagramSection = () => { ... } 
 
-  return (
-    <section className="py-24 bg-finca-light">
-      <div className="max-w-[1600px] mx-auto px-6">
-        <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center mb-12 group">
-          <Instagram size={20} className="text-stone-900 mb-4 group-hover:text-stone-600 transition-colors" />
-          <h3 className="text-xl font-serif text-stone-900 mb-2 group-hover:text-stone-600 transition-colors">@lamaisonibizienne</h3>
-          <p className="text-[10px] uppercase tracking-widest text-stone-400 font-serif">Suivez-nous</p>
-        </a>
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-2 md:gap-4">
-          {posts.map((img, i) => (
-            <a key={i} href={instagramUrl} target="_blank" rel="noopener noreferrer" className="relative aspect-square overflow-hidden group cursor-pointer bg-finca-medium rounded-sm">
-              <img src={img} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 grayscale group-hover:grayscale-0" />
-              <div className="absolute inset-0 bg-stone-900/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
-                <Heart size={20} fill="white" />
-              </div>
-            </a>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-};
 
 const CartDrawer = ({ isOpen, onClose, items, onRemove }) => {
   const total = items.reduce((acc, item) => acc + (parseFloat(item.selectedVariant?.price?.amount || item.priceRange?.minVariantPrice?.amount || 0) * (item.quantity || 1)), 0);
@@ -955,7 +1011,7 @@ const CartDrawer = ({ isOpen, onClose, items, onRemove }) => {
 };
 
 const Footer = ({ logo }) => {
-  const socialConfig = SITE_CONFIG.INSTAGRAM;
+  const social = SITE_CONFIG.SOCIAL_LINKS;
   
   return (
     <footer className="bg-[#1C1C1C] text-finca-light py-24">
@@ -967,22 +1023,37 @@ const Footer = ({ logo }) => {
         <div>
           <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold mb-8 text-stone-500 font-serif">Service</h4>
           <ul className="space-y-4 text-sm font-light text-stone-300 font-serif">
-            <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
-            <li><a href="#" className="hover:text-white transition-colors">Livraison</a></li>
+            <li><a href={social.CONTACT_URL} className="hover:text-white transition-colors">Contact</a></li>
+            <li><a href={social.DELIVERY_URL} className="hover:text-white transition-colors">Livraison</a></li>
           </ul>
         </div>
         <div>
           <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold mb-8 text-stone-500 font-serif">Maison</h4>
           <ul className="space-y-4 text-sm font-light text-stone-300 font-serif">
-            <li><a href="#" className="hover:text-white transition-colors">Philosophie</a></li>
-            <li><a href="#" className="hover:text-white transition-colors">Journal</a></li>
+            <li><a href={social.PHILOSOPHY_URL} className="hover:text-white transition-colors">Philosophie</a></li>
+            <li><a href="#journal-section" className="hover:text-white transition-colors">Journal</a></li>
           </ul>
         </div>
         <div>
           <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold mb-8 text-stone-500 font-serif">Social</h4>
-          <div className="flex gap-6 text-stone-400">
-            <a href={socialConfig.URL} target="_blank" rel="noopener noreferrer"><Instagram className="hover:text-white cursor-pointer transition-colors" size={20} /></a>
-            <a href={socialConfig.FACEBOOK_URL} target="_blank" rel="noopener noreferrer"><Facebook className="hover:text-white cursor-pointer transition-colors" size={20} /></a>
+          <div className="flex flex-col gap-3 text-stone-400">
+             {/* Lien Instagram (logo + handle) */}
+            <a href={social.INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:text-white cursor-pointer transition-colors">
+              <Instagram size={20} />
+              <span className="text-sm font-serif">{social.INSTAGRAM_HANDLE}</span>
+            </a>
+            {/* Lien TikTok ajouté */}
+            <a href={social.TIKTOK_URL} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:text-white cursor-pointer transition-colors">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12.532 2.00002C12.532 2.00002 12.83 2.00002 12.87 2.00002C13.23 2.00002 13.57 2.08002 13.91 2.22002C14.54 2.49002 15.01 2.87002 15.3 3.32002C15.54 3.70002 15.65 4.14002 15.65 4.63002V6.52002C16.89 6.27002 18.06 6.13002 19.16 6.13002C20.67 6.13002 21.68 6.43002 22.08 7.02002C22.48 7.61002 22.56 8.52002 22.56 9.75002C22.56 11.23 22.38 12.56 22.02 13.73C21.6 15.11 20.89 16.32 19.92 17.37C18.96 18.42 17.76 19.26 16.32 19.91C14.89 20.57 13.29 20.9 11.53 20.9C9.76997 20.9 8.16997 20.57 6.72997 19.91C5.28997 19.26 4.08997 18.42 3.12997 17.37C2.15997 16.32 1.44997 15.11 1.02997 13.73C0.60997 12.35 0.39997 10.8 0.39997 9.07002C0.39997 7.34002 0.60997 5.79002 1.02997 4.41002C1.44997 3.03002 2.15997 1.82002 3.12997 0.77002C4.08997 -0.28998 5.28997 -1.13998 6.72997 -1.80998C8.16997 -2.46998 9.76997 -2.79998 11.53 -2.79998C12.35 -2.79998 13.15 -2.74998 13.91 -2.64998V-0.75998C13.15 -0.84998 12.35 -0.89998 11.53 -0.89998C8.90001 -0.89998 6.74001 0.05002 5.04001 1.95002C3.34001 3.85002 2.49001 6.36002 2.49001 9.48002C2.49001 12.6 3.34001 15.11 5.04001 17.01C6.74001 18.91 8.90001 19.86 11.53 19.86C14.16 19.86 16.32 18.91 18.02 17.01C19.72 15.11 20.57 12.6 20.57 9.48002C20.57 8.35002 20.44 7.37002 20.19 6.54002C20.09 6.47002 20.04 6.40002 20.04 6.33002V2.00002H12.532Z" transform="translate(1 3.99998)" />
+              </svg>
+              <span className="text-sm font-serif">TikTok</span>
+            </a>
+            {/* Lien Facebook */}
+            <a href={social.FACEBOOK_URL} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:text-white cursor-pointer transition-colors">
+              <Facebook size={20} />
+              <span className="text-sm font-serif">Facebook</span>
+            </a>
           </div>
         </div>
       </div>
@@ -991,7 +1062,7 @@ const Footer = ({ logo }) => {
 };
 
 // ==============================================================================
-// 6. COMPOSANT PRINCIPAL (APP)
+// 8. COMPOSANT PRINCIPAL (APP)
 // ==============================================================================
 
 export default function App() {
@@ -1108,13 +1179,12 @@ export default function App() {
         {/* Composants convertis en carousels */}
         <CollectionCarousel collections={collections} onCollectionSelect={handleCollectionSelect} />
         <MaterialsSection />
-        <CoachingSection /> {/* AJOUT: La section Coaching pour équilibrer la page */}
+        <CoachingSection /> 
         <div id="new-in">
           {/* L'affichage des produits actifs reste une section centrale de la boutique */}
           <ProductCarousel products={activeProducts} title={activeCollectionName} onAdd={handleAddToCartClick} />
         </div>
         <JournalCarousel articles={blogArticles} onArticleClick={setActiveArticle} />
-        <InstagramSection />
       </main>
       <Footer logo={shopName} />
       {/* Modals and Drawers */}
