@@ -27,112 +27,161 @@ const TailwindConfig = `
   }
 `;
 
+// Paramètres Shopify API (Nécessitent un jeton d'accès et un domaine valides)
 const STOREFRONT_ACCESS_TOKEN = '4b2746c099f9603fde4f9639336a235d'; 
 const SHOPIFY_DOMAIN = '91eg2s-ah.myshopify.com'; 
 const API_VERSION = '2024-01';
-const HERO_VIDEO_URL = "https://cdn.shopify.com/videos/c/o/v/c4d96d8c70b64465835c4eadaa115175.mp4";
-
-// ==============================================================================
-// 1b. LIENS EXTERNES CENTRALISÉS (Facilement modifiables)
-// ==============================================================================
-
-const EXTERNAL_LINKS = {
-  INSTAGRAM_URL: "https://www.instagram.com/lamaisonibizienne", // Lien Instagram
-  FACEBOOK_URL: "https://www.facebook.com/lamaisonibizienne",   // Lien Facebook
-};
 
 
 // ==============================================================================
-// 2. TEXTES MODIFIABLES & CONFIGURATION DE CONTENU
+// 2. CONFIGURATION DU CONTENU (TEXTES, LIENS, IMAGES - Modifiables ici)
 // ==============================================================================
 
 /**
- * NOUVEAU: Configuration des médias pour faciliter l'édition des URLs de posts.
- * Utiliser des URLs d'images carrées (aspect-ratio 1/1) de préférence.
+ * Tous les textes, liens et images non gérés directement par l'API Shopify
+ * sont regroupés ici pour un paramétrage simple par l'utilisateur final.
  */
-const MEDIA_CONFIG = {
-  INSTAGRAM_POSTS: [
-    "https://images.unsplash.com/photo-1533090161767-e6ffed986c88?q=80&w=600&auto=format&fit=crop", // Post 1
-    "https://images.unsplash.com/photo-1522771753035-4a50c95b9389?q=80&w=600&auto=format&fit=crop", // Post 2
-    "https://images.unsplash.com/photo-1616486338812-3dadae4b4f9d?q=80&w=600&auto=format&fit=crop", // Post 3
-    "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?q=80&w=600&auto=format&fit=crop", // Post 4
-    "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?q=80&w=600&auto=format&fit=crop", // Post 5
-    "https://images.unsplash.com/photo-1616047006789-b7af5afb8c20?q=80&w=600&auto=format&fit=crop"  // Post 6
-  ]
-};
-
-const TEXTS = {
-  hero: {
-    surtitle: "Slow Living",
-    title: "L'Esprit\nFinca",
-    button: "Explorer"
+const SITE_CONFIG = {
+  // --- SECTION HÉRO ---
+  HERO: {
+    // URL de la vidéo d'arrière-plan de la section Héros
+    VIDEO_URL: "https://cdn.shopify.com/videos/c/o/v/c4d96d8c70b64465835c4eadaa115175.mp4",
+    // Texte au-dessus du titre principal
+    SURTITLE: "Slow Living",
+    // Titre principal (utiliser \n pour le saut de ligne)
+    TITLE: "L'Esprit\nMéditerranéen",
+    // Texte du bouton
+    BUTTON_TEXT: "Explorer"
   },
-  materials: [
+
+  // --- SECTION MATÉRIAUX / VALEURS (Bloc répétable) ---
+  MATERIALS: [
     {
-      title: "Bois d'Olivier & Teck",
-      text: "Des bois nobles, robustes et patinés par le temps."
+      TITLE: "Bois d'Olivier & Teck",
+      TEXT: "Des bois nobles, robustes et patinés par le temps."
     },
     {
-      title: "Fibres Naturelles",
-      text: "Jute, rotin, osier. Tressés à la main pour apporter chaleur et texture."
+      TITLE: "Fibres Naturelles",
+      TEXT: "Jute, rotin, osier. Tressés à la main pour apporter chaleur et texture."
     },
     {
-      title: "Artisanat Local",
-      text: "Chaque pièce est unique, façonnée par des mains expertes."
+      TITLE: "Artisanat",
+      TEXT: "Chaque pièce est unique, façonnée par des mains expertes."
     }
   ],
-  sections: {
-    univers: "Nos Univers",
-    boutique: "La Boutique",
-    journal_title: "Le Journal",
-    journal_subtitle: "Inspirations",
-    journal_link: "Toutes les histoires"
+  
+  // --- SECTION COACHING / SERVICE (Bloc image/texte) ---
+  COACHING: {
+    // Image de fond pour la section Coaching
+    IMAGE_URL: "https://images.unsplash.com/photo-1627885060424-699741c3057e?q=80&w=1200&auto=format&fit=crop", 
+    // Sous-titre
+    SURTITLE: "Notre Expertise",
+    // Titre principal
+    TITLE: "Transformer votre cocon, l'Art du Conseil.",
+    // Description générale
+    DESCRIPTION: "Notre service de coaching et d'accompagnement dépasse la simple décoration. Nous concevons ensemble un style de vie complet, de l'architecture à la sélection de chaque pièce artisanale.",
+    // Liste des avantages / points clés (Blocs répétables)
+    ADVANTAGES: [
+      "Design d'intérieur personnalisé.",
+      "Sourcing d'artisans.",
+      "Gestion de projet et rénovation."
+    ],
+    // Texte du bouton d'action
+    BUTTON_TEXT: "Découvrir le Coaching"
   },
-  footer: {
-    about: "Art de vivre méditerranéen.\nFait main à Ibiza."
+
+  // --- SECTION INSTAGRAM / RÉSEAUX SOCIAUX ---
+  INSTAGRAM: {
+    // Lien externe vers le profil Instagram
+    URL: "https://www.instagram.com/lamaisonibizienne", 
+    // Lien externe vers le profil Facebook
+    FACEBOOK_URL: "https://www.facebook.com/lamaisonibizienne", 
+    // Liste des URLs des images de posts (6 images)
+    POSTS: [
+      "https://www.instagram.com/p/DMiL1scoznT/", 
+      "https://www.instagram.com/p/DMcqWG0IadK/", 
+      "https://www.instagram.com/p/DManEXLo02w/", 
+      "https://www.instagram.com/p/DG3jCL4owNB/", 
+      "https://www.instagram.com/p/DGxUMd2oNvX/", 
+      "https://www.instagram.com/p/DGsaZmjIqF1/"  
+    ]
+  },
+
+  // --- TEXTES DIVERS / NAVIGATION ---
+  SECTIONS: {
+    UNIVERS: "Nos Univers",
+    BOUTIQUE: "La Boutique",
+    JOURNAL_TITLE: "Le Journal",
+    JOURNAL_SUBTITLE: "Inspirations",
+    JOURNAL_LINK: "Toutes les histoires"
+  },
+  FOOTER: {
+    ABOUT: "Art de vivre méditerranéen.\nFait main par nos artisans."
   }
 };
 
-const ARTICLE_CONTENT_CLEANUP_FILTERS = [
-  "Salon méditerranéen lumineux avec décoration naturelle harmonieuse",
-  "Maison moderne avec extension – agrandissement et permis de construire",
-  "www\\.lamaisonibizienne\\.com",
-  "erreurs déco qui nuisent à l'harmonie d'un intérieur – et comment les éviter",
-  "Un intérieur harmonieux se joue dans les détails\\. Découvrez 5 erreurs fréquentes en décoration d'intérieur et nos conseils simples pour les éviter\\.",
-  "Immobilier haut de gamme",
-  "Par La Maison Ibizienne – Architecture, Décoration & Accompagnement",
-  "Ce que nous observons depuis le terrain, entre Ibiza, la Côte d'Azur et les villages cachés de Corse\\.",
-  "tendances été 2025 : Ce que veulent les acheteurs exigeants aujourd'hui",
-  "\\(et ce qu'ils fuient\\)",
-  "Mieux vaut laisser vivre l'intérieur avant de le remplir\\.",
-  "Pour vous aider à naviguer dans ce marché, nous avons condensé les 5 tendances majeures et les 5 erreurs à éviter absolument\\.",
-  "Ce que nous proposons",
-  "Chez La Maison Ibizienne, nous ne vous aidons pas simplement à acheter ou vendre\\.",
-  "Nous révélons le potentiel de votre bien\\.",
-  "Et nous créons un environnement qui parle à vos futurs acquéreurs dès la première visite\\.",
-  "Un excès d'éclectisme peut nuire à la cohérence visuelle\\. Il est important de choisir une ligne directrice pour créer une harmonie fluide et agréable\\.",
-  "Une maison mal éclairée semble triste, même bien décorée\\. Multipliez les sources douces : suspensions, lampes d'ambiance, lumière naturelle\\.",
-  "Choisir une couleur sans penser au reste de l'espace \\(mobilier, sol, lumière\\) peut rompre l'équilibre\\. Privilégiez une palette cohérente et naturelle\\.",
-  "Le vide n'est pas un manque, mais une respiration\\. Des zones dégagées donnent du relief et valorisent les éléments décoratifs présents\\.",
-  // Fragments JSON potentiellement visibles
-  "\"@context\":",
-  "\"@type\":",
-  "\"headline\":",
-  "\"description\":",
-  "\"image\":",
-  "\"author\":",
-  "\"name\":",
-  "\"url\":",
-  "\"datePublished\":",
-  "\"publisher\":",
-  "\"mainEntityOfPage\":",
-  "\"https://www\\.votresite\\.com/assets/[a-zA-Z0-9-]+\\.jpg\"",
-  "\\{\\s*",
-  "\\}\\s*",
-];
 
 // ==============================================================================
-// 3. LOGIQUE API
+// 3. PARAMÈTRES DE DESIGN & NETTOYAGE (Moins souvent modifiés)
+// ==============================================================================
+
+/**
+ * Paramètres pour ajuster le style et la structure (largeurs, nettoyage de contenu).
+ * Ne modifiez que si vous voulez changer la proportion des carrousels ou le nettoyage de texte.
+ */
+const DESIGN_CONFIG = {
+  // Largeur des éléments du carrousel de collections (pour l'aspect)
+  COLLECTION_ITEM_WIDTH: "w-[80vw] md:w-[400px] lg:w-[450px]",
+  
+  // Largeur des éléments du carrousel de produits (pour l'aspect)
+  PRODUCT_ITEM_WIDTH: "w-[60vw] sm:w-[50vw] md:w-[350px] lg:w-[300px]",
+  
+  // Largeur des éléments du carrousel de journal/blog (pour l'aspect luxe/espacé)
+  JOURNAL_ITEM_WIDTH: "w-[65vw] sm:w-[45vw] md:w-[280px] lg:w-[300px]",
+
+  // Filtres pour nettoyer le contenu HTML importé des articles de blog Shopify
+  ARTICLE_CLEANUP_FILTERS: [
+    "Salon méditerranéen lumineux avec décoration naturelle harmonieuse",
+    "Maison moderne avec extension – agrandissement et permis de construire",
+    "www\\.lamaisonibizienne\\.com",
+    "erreurs déco qui nuisent à l'harmonie d'un intérieur – et comment les éviter",
+    "Un intérieur harmonieux se joue dans les détails\\. Découvrez 5 erreurs fréquentes en décoration d'intérieur et nos conseils simples pour les éviter\\.",
+    "Immobilier haut de gamme",
+    "Par La Maison Ibizienne – Architecture, Décoration & Accompagnement",
+    "Ce que nous observons depuis le terrain, entre Ibiza, la Côte d'Azur et les villages cachés de Corse\\.",
+    "tendances été 2025 : Ce que veulent les acheteurs exigeants aujourd'hui",
+    "\\(et ce qu'ils fuient\\)",
+    "Mieux vaut laisser vivre l'intérieur avant de le remplir\\.",
+    "Pour vous aider à naviguer dans ce marché, nous avons condensé les 5 tendances majeures et les 5 erreurs à éviter absolument\\.",
+    "Ce que nous proposons",
+    "Chez La Maison Ibizienne, nous ne vous aidons pas simplement à acheter ou vendre\\.",
+    "Nous révélons le potentiel de votre bien\\.",
+    "Et nous créons un environnement qui parle à vos futurs acquéreurs dès la première visite\\.",
+    "Un excès d'éclectisme peut nuire à la cohérence visuelle\\. Il est important de choisir une ligne directrice pour créer une harmonie fluide et agréable\\.",
+    "Une maison mal éclairée semble triste, même bien décorée\\. Multipliez les sources douces : suspensions, lampes d'ambiance, lumière naturelle\\.",
+    "Choisir une couleur sans penser au reste de l'espace \\(mobilier, sol, lumière\\) peut rompre l'équilibre\\. Privilégiez une palette cohérente et naturelle\\.",
+    "Le vide n'est pas un manque, mais une respiration\\. Des zones dégagées donnent du relief et valorisent les éléments décoratifs présents\\.",
+    // Fragments JSON potentiellement visibles
+    "\"@context\":",
+    "\"@type\":",
+    "\"headline\":",
+    "\"description\":",
+    "\"image\":",
+    "\"author\":",
+    "\"name\":",
+    "\"url\":",
+    "\"datePublished\":",
+    "\"publisher\":",
+    "\"mainEntityOfPage\":",
+    "\"https://www\\.votresite\\.com/assets/[a-zA-Z0-9-]+\\.jpg\"",
+    "\\{\\s*",
+    "\\}\\s*",
+  ]
+}
+
+
+// ==============================================================================
+// 4. LOGIQUE API
 // ==============================================================================
 
 const proceedToCheckout = (cartItems) => {
@@ -148,6 +197,7 @@ const proceedToCheckout = (cartItems) => {
   
   // NOTE: This URL construction is a simple approximation for demo purposes.
   // A real integration would use the Storefront API to create a Checkout object.
+  // Simuler l'arrivée sur une page de paiement ou une page isolée post-ajout au panier
   window.location.href = `https://${SHOPIFY_DOMAIN}/cart/${itemsString}`;
 };
 
@@ -222,17 +272,11 @@ async function fetchShopifyData() {
 const FALLBACK_DATA = { shop: { name: "LA MAISON" }, collections: { edges: [] }, products: { edges: [] } };
 
 // ==============================================================================
-// 4. COMPOSANTS DESIGN
+// 5. COMPOSANTS DESIGN
 // ==============================================================================
 
 /**
  * Composant de carrousel générique pour le défilement horizontal.
- * @param {object} props - Les propriétés du composant.
- * @param {string} props.title - Le titre de la section.
- * @param {string} props.subtitle - Le sous-titre de la section (optionnel).
- * @param {string} props.anchorId - L'ID de l'ancre pour le scroll.
- * @param {number} props.itemWidth - La largeur de l'élément en Tailwind (ex: 'w-[80vw]', 'md:w-[350px]').
- * @param {React.ReactNode} props.children - Les éléments à faire défiler (doivent être enveloppés).
  */
 const Carousel = ({ title, subtitle, anchorId, itemWidth, children }) => {
   const scrollContainerRef = useRef(null);
@@ -317,33 +361,46 @@ const Navbar = ({ logo, cartCount, onOpenCart, isArticleView, onBack }) => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+  
+  // Utiliser isIsolatedView pour couvrir les cas d'article, de paiement, etc.
+  const isIsolatedView = isArticleView;
 
-  if (isArticleView) {
+  const LogoComponent = () => (
+    <div className={`text-2xl md:text-3xl lg:text-4xl font-serif tracking-[0.15em] font-bold text-center text-stone-900 whitespace-nowrap drop-shadow-sm transition-all duration-500 ${isIsolatedView ? 'cursor-default' : 'hover:opacity-80'}`}>
+      {logo}
+    </div>
+  );
+
+  if (isIsolatedView) {
+    // Vue isolée (Article/Paiement) : Simplification de la Navbar
     return (
       <nav className="fixed top-0 left-0 w-full z-50 bg-finca-light/95 backdrop-blur-md border-b border-stone-100 py-4 transition-all">
         <div className="max-w-[1200px] mx-auto px-6 flex justify-between items-center">
           <button onClick={onBack} className="flex items-center gap-3 text-[10px] uppercase tracking-widest font-bold hover:text-stone-500 transition-colors group">
             <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Retour
           </button>
-          <div className="text-xl font-serif font-bold tracking-[0.15em] text-stone-900">{logo}</div>
+          {/* Le logo n'est PAS un lien dans cette vue pour éviter de rompre le flux de conversion/lecture */}
+          <LogoComponent />
           <div className="w-16"></div> {/* Spacer équilibrant */}
         </div>
       </nav>
     );
   }
 
+  // Vue principale : Navigation complète
   return (
     <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-700 border-b ${isScrolled ? 'bg-finca-light/95 backdrop-blur-md border-stone-200 py-4 shadow-sm' : 'bg-transparent border-transparent py-6'}`}>
       <div className="max-w-[1800px] mx-auto px-6 md:px-12 grid grid-cols-12 items-start">
         <div className="col-span-4 hidden lg:flex gap-8 text-[10px] uppercase tracking-[0.25em] font-serif text-stone-900 pt-1">
           <a href="#collections" className="hover:text-stone-500 transition-colors whitespace-nowrap">Collections</a>
-          <a href="#new-in" className="hover:text-stone-500 transition-colors whitespace-nowrap">Nouveautés</a>
+          <a href="#coaching" className="hover:text-stone-500 transition-colors whitespace-nowrap">Coaching</a>
           <a href="#journal-section" className="hover:text-stone-500 transition-colors whitespace-nowrap">Journal</a>
         </div>
-        <div className="col-span-12 lg:col-span-4 flex justify-center order-first lg:order-none mb-4 lg:mb-0 lg:mt-5 transition-all duration-500">
-          <div className={`text-2xl md:text-3xl lg:text-4xl font-serif tracking-[0.15em] font-bold text-center text-stone-900 whitespace-nowrap drop-shadow-sm`}>
-            {logo}
-          </div>
+        <div className="col-span-12 lg:col-span-4 flex justify-center order-first lg:order-none mb-4 lg:mb-0 lg:mt-5">
+          {/* Le logo est un lien vers la page principale dans la vue complète */}
+          <a href="#" className="hover:opacity-80 transition-opacity">
+            <LogoComponent />
+          </a>
         </div>
         <div className="col-span-4 hidden lg:flex justify-end items-center gap-8 pt-1">
           <div className="relative cursor-pointer hover:opacity-60 transition-opacity flex items-center gap-2" onClick={onOpenCart}>
@@ -366,16 +423,16 @@ const HeroSection = ({ onScroll }) => (
   <div className="relative h-[95vh] w-full flex flex-col justify-center items-center text-center px-4 overflow-hidden bg-finca-medium">
     <div className="absolute inset-0 z-0">
       <video className="w-full h-full object-cover animate-fade-in" autoPlay loop muted playsInline>
-        <source src={HERO_VIDEO_URL} type="video/mp4" />
+        <source src={SITE_CONFIG.HERO.VIDEO_URL} type="video/mp4" />
       </video>
       <div className="absolute inset-0 bg-stone-900/5" />
     </div>
     <div className="relative z-10 pt-40 max-w-4xl animate-slide-up">
       <div className="bg-white/10 backdrop-blur-sm border border-white/20 p-8 md:p-14 inline-block shadow-2xl">
-        <span className="text-[10px] uppercase tracking-[0.4em] text-white/90 mb-6 block font-serif">{TEXTS.hero.surtitle}</span>
-        <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif text-white mb-8 leading-[0.85] tracking-tight drop-shadow-lg whitespace-pre-line">{TEXTS.hero.title}</h1>
+        <span className="text-[10px] uppercase tracking-[0.4em] text-white/90 mb-6 block font-serif">{SITE_CONFIG.HERO.SURTITLE}</span>
+        <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif text-white mb-8 leading-[0.85] tracking-tight drop-shadow-lg whitespace-pre-line">{SITE_CONFIG.HERO.TITLE}</h1>
         <button onClick={onScroll} className="group relative overflow-hidden bg-finca-light text-stone-900 px-10 py-4 uppercase tracking-[0.25em] text-[10px] font-bold transition-all hover:bg-white hover:px-12 shadow-lg rounded-sm">
-          <span className="relative z-10">{TEXTS.hero.button}</span>
+          <span className="relative z-10">{SITE_CONFIG.HERO.BUTTON_TEXT}</span>
         </button>
       </div>
     </div>
@@ -483,7 +540,7 @@ const ArticleView = ({ article }) => {
     text = text.replace(/<[^>]+>/g, ' ');      
     
     // Étape 4: Application des filtres de texte (nettoyage du contenu non désiré)
-    ARTICLE_CONTENT_CLEANUP_FILTERS.forEach(filterText => {
+    DESIGN_CONFIG.ARTICLE_CLEANUP_FILTERS.forEach(filterText => {
       // Échapper pour la regex (sauf si c'est déjà un motif regex)
       const escapedFilter = filterText.replace(/([.*+?^=!:${}()|[\]/\\])/g, '\\$1');
       const regex = new RegExp(escapedFilter, 'g');
@@ -629,7 +686,44 @@ const ArticleView = ({ article }) => {
   );
 };
 
-// NOUVEAU: Utilise le composant Carousel
+// NOUVEAU: Section pour le service/coaching
+const CoachingSection = () => (
+  <section id="coaching" className="py-32 bg-finca-light border-t border-stone-200">
+    <div className="max-w-5xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      {/* Image / Background graphic */}
+      <div className="relative aspect-[4/3] bg-finca-medium rounded-lg shadow-xl overflow-hidden">
+        <img
+          src={SITE_CONFIG.COACHING.IMAGE_URL} // Utilisation de l'URL du SITE_CONFIG
+          alt="Consultation et design d'intérieur"
+          className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity duration-500"
+        />
+        <div className="absolute inset-0 bg-stone-900/10" />
+      </div>
+
+      {/* Content */}
+      <div className="text-stone-900 lg:pl-10 py-6">
+        <span className="text-[10px] font-serif tracking-[0.3em] text-stone-400 uppercase mb-4 block">{SITE_CONFIG.COACHING.SURTITLE}</span>
+        <h2 className="text-4xl md:text-5xl font-serif leading-tight mb-8">
+          {SITE_CONFIG.COACHING.TITLE}
+        </h2>
+        <p className="font-light text-lg mb-6 text-stone-600">
+          {SITE_CONFIG.COACHING.DESCRIPTION}
+        </p>
+        <ul className="space-y-3 text-stone-500 text-sm mb-10">
+          {SITE_CONFIG.COACHING.ADVANTAGES.map((text, index) => (
+             <li key={index} className="flex items-center gap-3"><ChevronRight size={16} className="text-stone-900 flex-shrink-0" /> {text}</li>
+          ))}
+        </ul>
+        <button className="group relative overflow-hidden bg-stone-900 text-finca-light px-10 py-4 uppercase tracking-[0.25em] text-[10px] font-bold transition-all hover:bg-stone-700 shadow-lg rounded-sm">
+          <span className="relative z-10">{SITE_CONFIG.COACHING.BUTTON_TEXT}</span>
+        </button>
+      </div>
+    </div>
+  </section>
+);
+
+
+// Utilise le composant Carousel
 const CollectionCarousel = ({ collections, onCollectionSelect }) => {
   const validCollections = collections.filter(c => {
     const title = c.node.title.toLowerCase();
@@ -640,11 +734,10 @@ const CollectionCarousel = ({ collections, onCollectionSelect }) => {
 
   return (
     <Carousel 
-      title={TEXTS.sections.univers} 
+      title={SITE_CONFIG.SECTIONS.UNIVERS} 
       subtitle="Découvrir" 
       anchorId="collections" 
-      // Largeur: 80% sur mobile, 350px sur desktop pour que plusieurs items soient visibles
-      itemWidth="w-[80vw] md:w-[400px] lg:w-[450px]"
+      itemWidth={DESIGN_CONFIG.COLLECTION_ITEM_WIDTH}
     >
       {validCollections.map((col) => (
         <div 
@@ -675,10 +768,9 @@ const ProductCarousel = ({ products, title, onAdd }) => {
   return (
     <Carousel
       title={title}
-      subtitle={TEXTS.sections.boutique}
+      subtitle={SITE_CONFIG.SECTIONS.BOUTIQUE}
       anchorId="new-in-list"
-      // Largeur: 60% sur mobile, 300px sur desktop
-      itemWidth="w-[60vw] sm:w-[50vw] md:w-[350px] lg:w-[300px]"
+      itemWidth={DESIGN_CONFIG.PRODUCT_ITEM_WIDTH}
     >
       {products.map((p) => {
         const node = p.node;
@@ -714,10 +806,10 @@ const ProductCarousel = ({ products, title, onAdd }) => {
 const MaterialsSection = () => (
   <section className="py-24 bg-finca-medium border-t border-b border-stone-200">
     <div className="max-w-[1600px] mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
-      {TEXTS.materials.map((item, index) => (
+      {SITE_CONFIG.MATERIALS.map((item, index) => (
         <div key={index} className="flex flex-col items-center">
-          <h3 className="font-serif text-xl mb-3 text-stone-900 italic">{item.title}</h3>
-          <p className="text-sm text-stone-600 font-light leading-relaxed max-w-xs">{item.text}</p>
+          <h3 className="font-serif text-xl mb-3 text-stone-900 italic">{item.TITLE}</h3>
+          <p className="text-sm text-stone-600 font-light leading-relaxed max-w-xs">{item.TEXT}</p>
         </div>
       ))}
     </div>
@@ -729,11 +821,10 @@ const JournalCarousel = ({ articles, onArticleClick }) => {
   if (!articles || articles.length === 0) return null;
   return (
     <Carousel 
-      title={TEXTS.sections.journal_title} 
-      subtitle={TEXTS.sections.journal_subtitle} 
+      title={SITE_CONFIG.SECTIONS.JOURNAL_TITLE} 
+      subtitle={SITE_CONFIG.SECTIONS.JOURNAL_SUBTITLE} 
       anchorId="journal-section" 
-      // MODIFICATION APPLIQUÉE : Réduction supplémentaire pour un aspect plus élancé et luxueux
-      itemWidth="w-[65vw] sm:w-[45vw] md:w-[280px] lg:w-[300px]"
+      itemWidth={DESIGN_CONFIG.JOURNAL_ITEM_WIDTH}
     >
       {articles.map((article, idx) => {
         const node = article.node;
@@ -761,7 +852,7 @@ const JournalCarousel = ({ articles, onArticleClick }) => {
       {/* Ajout d'un bouton "Voir tout" comme dernier élément du carousel (pas un snap point) */}
       <div className="flex-shrink-0 flex items-center justify-center w-[45vw] sm:w-[35vw] md:w-[250px] lg:w-[300px] pr-10">
         <button className="text-[10px] uppercase tracking-[0.2em] text-stone-400 hover:text-stone-900 transition-colors border-b border-transparent hover:border-stone-900 pb-1 font-serif flex items-center gap-3">
-          {TEXTS.sections.journal_link} <ChevronRight size={14} />
+          {SITE_CONFIG.SECTIONS.JOURNAL_LINK} <ChevronRight size={14} />
         </button>
       </div>
     </Carousel>
@@ -769,20 +860,22 @@ const JournalCarousel = ({ articles, onArticleClick }) => {
 };
 
 const InstagramSection = () => {
-  // Les posts sont maintenant importés de MEDIA_CONFIG
-  const posts = MEDIA_CONFIG.INSTAGRAM_POSTS;
+  // Les posts sont maintenant importés de SITE_CONFIG
+  const posts = SITE_CONFIG.INSTAGRAM.POSTS;
+  const instagramUrl = SITE_CONFIG.INSTAGRAM.URL;
+  const facebookUrl = SITE_CONFIG.INSTAGRAM.FACEBOOK_URL;
 
   return (
     <section className="py-24 bg-finca-light">
       <div className="max-w-[1600px] mx-auto px-6">
-        <a href={EXTERNAL_LINKS.INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center mb-12 group">
+        <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center mb-12 group">
           <Instagram size={20} className="text-stone-900 mb-4 group-hover:text-stone-600 transition-colors" />
           <h3 className="text-xl font-serif text-stone-900 mb-2 group-hover:text-stone-600 transition-colors">@lamaisonibizienne</h3>
           <p className="text-[10px] uppercase tracking-widest text-stone-400 font-serif">Suivez-nous</p>
         </a>
         <div className="grid grid-cols-2 md:grid-cols-6 gap-2 md:gap-4">
           {posts.map((img, i) => (
-            <a key={i} href={EXTERNAL_LINKS.INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" className="relative aspect-square overflow-hidden group cursor-pointer bg-finca-medium rounded-sm">
+            <a key={i} href={instagramUrl} target="_blank" rel="noopener noreferrer" className="relative aspect-square overflow-hidden group cursor-pointer bg-finca-medium rounded-sm">
               <img src={img} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 grayscale group-hover:grayscale-0" />
               <div className="absolute inset-0 bg-stone-900/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
                 <Heart size={20} fill="white" />
@@ -861,40 +954,44 @@ const CartDrawer = ({ isOpen, onClose, items, onRemove }) => {
   );
 };
 
-const Footer = ({ logo }) => (
-  <footer className="bg-[#1C1C1C] text-finca-light py-24">
-    <div className="max-w-[1800px] mx-auto px-6 md:px-12 grid grid-cols-1 md:grid-cols-4 gap-12">
-      <div className="md:col-span-1">
-        <h3 className="text-2xl font-serif tracking-[0.1em] font-bold mb-6">{logo}</h3>
-        <p className="text-stone-400 text-sm font-serif italic leading-relaxed max-w-xs whitespace-pre-line">{TEXTS.footer.about}</p>
-      </div>
-      <div>
-        <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold mb-8 text-stone-500 font-serif">Service</h4>
-        <ul className="space-y-4 text-sm font-light text-stone-300 font-serif">
-          <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
-          <li><a href="#" className="hover:text-white transition-colors">Livraison</a></li>
-        </ul>
-      </div>
-      <div>
-        <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold mb-8 text-stone-500 font-serif">Maison</h4>
-        <ul className="space-y-4 text-sm font-light text-stone-300 font-serif">
-          <li><a href="#" className="hover:text-white transition-colors">Philosophie</a></li>
-          <li><a href="#" className="hover:text-white transition-colors">Journal</a></li>
-        </ul>
-      </div>
-      <div>
-        <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold mb-8 text-stone-500 font-serif">Social</h4>
-        <div className="flex gap-6 text-stone-400">
-          <a href={EXTERNAL_LINKS.INSTAGRAM_URL} target="_blank" rel="noopener noreferrer"><Instagram className="hover:text-white cursor-pointer transition-colors" size={20} /></a>
-          <a href={EXTERNAL_LINKS.FACEBOOK_URL} target="_blank" rel="noopener noreferrer"><Facebook className="hover:text-white cursor-pointer transition-colors" size={20} /></a>
+const Footer = ({ logo }) => {
+  const socialConfig = SITE_CONFIG.INSTAGRAM;
+  
+  return (
+    <footer className="bg-[#1C1C1C] text-finca-light py-24">
+      <div className="max-w-[1800px] mx-auto px-6 md:px-12 grid grid-cols-1 md:grid-cols-4 gap-12">
+        <div className="md:col-span-1">
+          <h3 className="text-2xl font-serif tracking-[0.1em] font-bold mb-6">{logo}</h3>
+          <p className="text-stone-400 text-sm font-serif italic leading-relaxed max-w-xs whitespace-pre-line">{SITE_CONFIG.FOOTER.ABOUT}</p>
+        </div>
+        <div>
+          <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold mb-8 text-stone-500 font-serif">Service</h4>
+          <ul className="space-y-4 text-sm font-light text-stone-300 font-serif">
+            <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
+            <li><a href="#" className="hover:text-white transition-colors">Livraison</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold mb-8 text-stone-500 font-serif">Maison</h4>
+          <ul className="space-y-4 text-sm font-light text-stone-300 font-serif">
+            <li><a href="#" className="hover:text-white transition-colors">Philosophie</a></li>
+            <li><a href="#" className="hover:text-white transition-colors">Journal</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold mb-8 text-stone-500 font-serif">Social</h4>
+          <div className="flex gap-6 text-stone-400">
+            <a href={socialConfig.URL} target="_blank" rel="noopener noreferrer"><Instagram className="hover:text-white cursor-pointer transition-colors" size={20} /></a>
+            <a href={socialConfig.FACEBOOK_URL} target="_blank" rel="noopener noreferrer"><Facebook className="hover:text-white cursor-pointer transition-colors" size={20} /></a>
+          </div>
         </div>
       </div>
-    </div>
-  </footer>
-);
+    </footer>
+  );
+};
 
 // ==============================================================================
-// 5. COMPOSANT PRINCIPAL (APP)
+// 6. COMPOSANT PRINCIPAL (APP)
 // ==============================================================================
 
 export default function App() {
@@ -1011,7 +1108,9 @@ export default function App() {
         {/* Composants convertis en carousels */}
         <CollectionCarousel collections={collections} onCollectionSelect={handleCollectionSelect} />
         <MaterialsSection />
+        <CoachingSection /> {/* AJOUT: La section Coaching pour équilibrer la page */}
         <div id="new-in">
+          {/* L'affichage des produits actifs reste une section centrale de la boutique */}
           <ProductCarousel products={activeProducts} title={activeCollectionName} onAdd={handleAddToCartClick} />
         </div>
         <JournalCarousel articles={blogArticles} onArticleClick={setActiveArticle} />
