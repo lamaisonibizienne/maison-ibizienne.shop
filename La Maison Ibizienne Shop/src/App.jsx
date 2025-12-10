@@ -230,6 +230,7 @@ const useIntersectionObserver = (options) => {
 const ScrollFadeIn = ({ children, delay = 0, threshold = 0.1, className = "" }) => {
   const [ref, isVisible] = useIntersectionObserver({ threshold: threshold });
   
+  // Utilisation de classes non transformantes par défaut pour ne pas casser le défilement tactile
   const baseClasses = 'transition-all duration-1000 ease-out';
   const visibleClasses = 'opacity-100 translate-y-0 scale-100';
   const hiddenClasses = 'opacity-0 translate-y-8 scale-[0.98]';
@@ -407,13 +408,14 @@ const Carousel = ({ title, subtitle, anchorId, itemWidth, children }) => {
         {/* Conteneur de défilement horizontal (Slide) */}
         <div
           ref={scrollContainerRef}
-          className={`flex overflow-x-scroll snap-x snap-mandatory space-x-6 md:space-x-10 pb-4 md:pb-8 touch-pan-x transition-shadow duration-500`}
+          // IMPORTANT: Retrait de 'touch-action: pan-y' pour rétablir le défilement fluide
+          // sur mobile, en comptant sur 'overflow-x-scroll' et 'snap-x' pour la fluidité.
+          className={`flex overflow-x-scroll snap-x snap-mandatory space-x-6 md:space-x-10 pb-4 md:pb-8 transition-shadow duration-500`}
           style={{ 
             // Cacher la barre de défilement
             scrollbarWidth: 'none', /* Firefox */
             msOverflowStyle: 'none', /* IE and Edge */
-            // FIX DE FLUIDITÉ MOBILE: Assurer que les glissements verticaux sont gérés par la page
-            touchAction: 'pan-y'
+            // Le défilement tactile est géré par la page principale, pas par un style spécifique ici.
           }}
           // Style pour cacher la barre de défilement sur Chrome/Safari
           onMouseEnter={() => scrollContainerRef.current.style.boxShadow = 'inset 0 -5px 10px rgba(0,0,0,0.05)'}
@@ -628,8 +630,7 @@ const ArticleView = ({ article }) => {
     
     // Étape 5: Nettoyage et reconstruction des blocs.
 
-    // A. Nettoyer les espaces et sauts de ligne multiples en UN SEUL double saut de ligne.
-    // Cela force la séparation des blocs là où il y avait une balise de bloc.
+    // FIX D'ERREUR: Terminer l'expression régulière
     text = text.replace(/(\s*\n\s*){2,}/g, '\n\n').trim(); 
     
     // B. Recompresser les espaces simples (à l'intérieur des lignes)
@@ -941,10 +942,6 @@ const JournalCarousel = ({ articles, onArticleClick }) => {
     </Carousel>
   );
 };
-
-// Suppression de InstagramSection (Remplacé par l'intégration dans le Footer)
-// const InstagramSection = () => { ... } 
-
 
 const CartDrawer = ({ isOpen, onClose, items, onRemove }) => {
   const total = items.reduce((acc, item) => acc + (parseFloat(item.selectedVariant?.price?.amount || item.priceRange?.minVariantPrice?.amount || 0) * (item.quantity || 1)), 0);
