@@ -398,7 +398,7 @@ const Carousel = ({ title, subtitle, anchorId, itemWidth, children }) => {
                 className="p-3 border border-stone-200 text-stone-900 hover:bg-stone-900 hover:text-white transition-colors rounded-full"
                 aria-label="Défiler à droite"
               >
-                <ChevronRight size={16} /> {/* FIX: Correction de la syntaxe JSX ici */}
+                <ChevronRight size={16} /> 
               </button>
             </div>
           </div>
@@ -411,7 +411,9 @@ const Carousel = ({ title, subtitle, anchorId, itemWidth, children }) => {
           style={{ 
             // Cacher la barre de défilement
             scrollbarWidth: 'none', /* Firefox */
-            msOverflowStyle: 'none' /* IE and Edge */
+            msOverflowStyle: 'none', /* IE and Edge */
+            // FIX DE FLUIDITÉ MOBILE: Assurer que les glissements verticaux sont gérés par la page
+            touchAction: 'pan-y'
           }}
           // Style pour cacher la barre de défilement sur Chrome/Safari
           onMouseEnter={() => scrollContainerRef.current.style.boxShadow = 'inset 0 -5px 10px rgba(0,0,0,0.05)'}
