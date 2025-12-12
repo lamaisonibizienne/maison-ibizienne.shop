@@ -951,7 +951,7 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
                     </div>
                     
                     {/* Colonne 2: Détails, Prix et Actions (Défilante) */}
-                    {/* CORRECTION: Application de overflow-y-auto sur mobile (pas besoin sur lg car c'est déjà h-full) */}
+                    {/* CORRECTION CRITIQUE: Ajout de 'h-full' et 'flex-col' pour s'assurer que la colonne prend la hauteur restante sur mobile et permet le défilement du contenu */}
                     <div className="lg:col-span-1 p-8 md:p-10 flex flex-col h-[calc(100%-50vh)] lg:h-full overflow-y-auto">
                         
                         {/* Bloc 1: Titre et Prix (Fixé en haut) */}
@@ -970,12 +970,12 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
                         </div>
                         
                         {/* Bloc 2: Description (Défilant) */}
-                        {/* flex-grow et overflow-y-visible pour s'assurer que le contenu utilise l'overflow du parent s'il le faut. */}
+                        {/* flex-grow garantit que la description prend l'espace disponible */}
                         <div className="mb-8 flex-grow">
                             <ProductDescriptionContent />
                         </div>
 
-                        {/* Bloc 3: Spécifications (Défilant) */}
+                        {/* Bloc 3: Spécifications (Fixé/Contenu additionnel) */}
                         <div className="mb-8 p-4 bg-finca-medium rounded-lg flex-shrink-0">
                             <h4 className="text-sm font-bold text-stone-900 mb-4 uppercase tracking-widest">Spécifications du produit</h4>
                             {mockSpecifications.map((spec, index) => (
@@ -1604,7 +1604,7 @@ const App = () => {
     const productsSection = document.getElementById('products');
     if (productsSection) {
       window.scrollTo({
-        top: productsSection.offsetTop - 100,
+        top: productsSection.offsetTop - 100, 
         behavior: 'smooth'
       });
     }
