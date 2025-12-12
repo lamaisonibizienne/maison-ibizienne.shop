@@ -656,7 +656,7 @@ const CartSidebar = ({ cartItems, isCartOpen, onClose, onUpdateQuantity, onRemov
           <div className="space-y-6">
             {cartItems.map(item => (
               <div key={item.variantId} className="flex gap-4 border-b border-stone-100 pb-4 last:border-b-0">
-                <div className="w-20 h-24 bg-stone-100 flex-shrink-0 rounded-sm overflow-hidden">
+                <div className="w-20 h-24 bg-stone-100 flex-shrink-0 overflow-hidden rounded-sm">
                   <img 
                     src={item.image || "https://placehold.co/80x96/F0EBE5/7D7D7D?text=Image"} 
                     alt={item.title} 
@@ -799,6 +799,22 @@ const HeroSection = ({ onScroll }) => (
  * Modale affichant la description détaillée d'un produit.
  */
 const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }) => {
+    // --- NOUVEAU: Logique de navigation dans le carrousel ---
+    const images = product.images?.edges?.map(e => e.node.url) || [];
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+    const goToNextImage = (e) => {
+        e.stopPropagation();
+        setCurrentImageIndex((prevIndex) => (prevIndex + 1) % images.length);
+    };
+
+    const goToPrevImage = (e) => {
+        e.stopPropagation();
+        setCurrentImageIndex((prevIndex) => (prevIndex - 1 + images.length) % images.length);
+    };
+    // --- FIN NOUVEAU: Logique de navigation ---
+
+
     if (!product) return null;
 
     const firstVariant = product.variants?.edges?.[0]?.node;
@@ -830,6 +846,9 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
     // Mise à jour: Affichage du prix avec 2 décimales
     const formatPriceDisplay = (price) => `€${parseFloat(price).toFixed(2)}`;
 
+    const currentImageUrl = images[currentImageIndex] || "https://placehold.co/1000x800/F0EBE5/7D7D7D?text=Image+Produit";
+
+
     return (
         // Overlay
         <div className="fixed inset-0 z-[80] bg-finca-medium/95 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
@@ -848,15 +867,39 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
                                </div>
                         )}
                         <img 
-                          src={product.images?.edges?.[0]?.node?.url || "https://placehold.co/1000x800/F0EBE5/7D7D7D?text=Image+Produit"} 
+                          src={currentImageUrl} 
                           alt={product.title} 
+                          key={currentImageUrl}
                           onError={(e) => {e.target.onerror = null; e.target.src="https://placehold.co/1000x800/F0EBE5/7D7D7D?text=Image+Produit"}}
                           // HAUTEUR MAX LÉGÈREMENT RÉDUITE POUR MOBILE/TAILLE FIXE SUR DESKTOP
-                          className="object-contain mx-auto w-full h-full max-h-full lg:max-h-[80vh]" 
+                          className="object-contain mx-auto w-full h-full max-h-full lg:max-h-[80vh] transition-opacity duration-300" 
                         />
+
+                         {/* Boutons de navigation (si > 1 image) */}
+                        {images.length > 1 && (
+                            <>
+                                <button 
+                                    onClick={goToPrevImage} 
+                                    className="absolute left-2 top-1/2 transform -translate-y-1/2 p-2 bg-black/30 text-white rounded-full transition-opacity hover:bg-black/50 z-30"
+                                >
+                                    <ChevronLeft size={24} />
+                                </button>
+                                <button 
+                                    onClick={goToNextImage} 
+                                    className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-black/30 text-white rounded-full transition-opacity hover:bg-black/50 z-30"
+                                >
+                                    <ChevronRight size={24} /> 
+                                </button>
+                            </>
+                        )}
+
                          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                             {product.images?.edges?.slice(0, 5).map((img, index) => (
-                                 <div key={index} className={`w-2 h-2 rounded-full transition-all ${index === 0 ? 'bg-stone-900' : 'bg-stone-400'}`}></div>
+                             {images.map((_, index) => (
+                                 <div 
+                                    key={index} 
+                                    onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(index); }}
+                                    className={`w-2 h-2 rounded-full transition-all cursor-pointer ${index === currentImageIndex ? 'bg-stone-900' : 'bg-stone-400'}`}>
+                                 </div>
                              ))}
                          </div>
                     </div>
