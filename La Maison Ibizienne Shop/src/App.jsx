@@ -776,7 +776,8 @@ const Navbar = ({ logo, cartCount, onOpenCart, isArticleView, onBack }) => {
 const HeroSection = ({ onScroll }) => (
   <div id="top" className="relative h-[95vh] w-full flex flex-col justify-center items-center text-center px-4 overflow-hidden bg-finca-medium">
     <div className="absolute inset-0 z-0">
-      <video className="w-full h-full object-cover" autoPlay loop muted playsInline>
+        {/* MISE À JOUR: Ajout de 'controls' et 'muted' pour maximiser l'autoplay sur mobile */}
+      <video className="w-full h-full object-cover" autoPlay loop muted playsInline controls>
         <source src={SITE_CONFIG.HERO.VIDEO_URL} type="video/mp4" />
       </video>
       <div className="absolute inset-0 bg-stone-900/10" />
@@ -799,7 +800,7 @@ const HeroSection = ({ onScroll }) => (
  * Modale affichant la description détaillée d'un produit.
  */
 const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }) => {
-    // --- NOUVEAU: Logique de navigation dans le carrousel ---
+    // --- Logique de navigation dans le carrousel ---
     const images = product.images?.edges?.map(e => e.node.url) || [];
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
@@ -812,7 +813,7 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
         e.stopPropagation();
         setCurrentImageIndex((prevIndex) => (prevIndex - 1 + images.length) % images.length);
     };
-    // --- FIN NOUVEAU: Logique de navigation ---
+    // --- Fin Logique de navigation ---
 
 
     if (!product) return null;
@@ -848,19 +849,18 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
 
     const currentImageUrl = images[currentImageIndex] || "https://placehold.co/1000x800/F0EBE5/7D7D7D?text=Image+Produit";
 
-
     return (
-        // Overlay
-        <div className="fixed inset-0 z-[80] bg-finca-medium/95 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
-            {/* Contenu de la modale: h-[90vh] pour contrôler la hauteur max et forcer le scroll sur l'intérieur */}
-            <div className="bg-finca-light w-full max-w-5xl shadow-2xl relative rounded-lg h-[90vh]" onClick={(e) => e.stopPropagation()}>
+        // Overlay - Fond 100% opaque sur mobile (bg-finca-medium) pour masquer le contenu derrière et améliorer la lisibilité
+        <div className="fixed inset-0 z-[80] bg-finca-medium/95 lg:bg-finca-medium/95 backdrop-blur-sm flex items-center justify-center p-0 lg:p-4 animate-fade-in" onClick={onClose}>
+            {/* Contenu de la modale: Pleine hauteur sur mobile (`h-full` et `max-h-full`) */}
+            <div className="bg-finca-light w-full max-w-5xl shadow-2xl relative rounded-lg h-full lg:h-[90vh] lg:max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
                 <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900 z-50"><X size={24} /></button>
                 
-                {/* Structure Grid : La hauteur totale de la modale est divisée par la grille */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 h-full"> 
+                {/* Structure Grid : Verticale sur mobile, 2/3 + 1/3 sur desktop */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 h-full overflow-hidden"> 
                     
-                    {/* Colonne 1: Image - Utilise h-full pour prendre toute la hauteur sur grand écran */}
-                    <div className="lg:col-span-2 relative h-[40%] lg:h-full overflow-hidden bg-stone-100 p-8 flex items-center justify-center">
+                    {/* Colonne 1: Image - Taille fixe (50% VH) sur mobile, hauteur complète sur desktop */}
+                    <div className="relative h-[50vh] lg:h-full overflow-hidden bg-stone-100 p-8 flex items-center justify-center lg:col-span-2">
                         {isOnSale && (
                                <div className="absolute top-4 left-4 bg-red-600 text-white text-xs px-3 py-1 rounded-sm font-bold z-10">
                                    Save {discountPercentage}%
@@ -871,7 +871,7 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
                           alt={product.title} 
                           key={currentImageUrl}
                           onError={(e) => {e.target.onerror = null; e.target.src="https://placehold.co/1000x800/F0EBE5/7D7D7D?text=Image+Produit"}}
-                          // HAUTEUR MAX LÉGÈREMENT RÉDUITE POUR MOBILE/TAILLE FIXE SUR DESKTOP
+                          // Hauteur max sur desktop pour éviter de déborder, et height-full sur mobile
                           className="object-contain mx-auto w-full h-full max-h-full lg:max-h-[80vh] transition-opacity duration-300" 
                         />
 
@@ -905,8 +905,8 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
                     </div>
                     
                     {/* Colonne 2: Détails, Prix et Actions (Défilante) */}
-                    {/* Utilise flex-col et overflow-y-auto pour forcer le défilement si le contenu déborde de la hauteur (h-full) */}
-                    <div className="lg:col-span-1 p-8 md:p-10 flex flex-col h-[60%] lg:h-full overflow-y-auto">
+                    {/* HAUTEUR AJUSTÉE : le reste de la hauteur (`h-[calc(100%-50vh)]`) sur mobile pour garantir le scroll lisible */}
+                    <div className="lg:col-span-1 p-8 md:p-10 flex flex-col h-[calc(100%-50vh)] lg:h-full overflow-y-auto">
                         
                         {/* Bloc 1: Titre et Prix (Fixé en haut) */}
                         <div className="pb-6 border-b border-stone-200 mb-6 flex-shrink-0">
@@ -924,6 +924,7 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
                         </div>
                         
                         {/* Bloc 2: Description (Défilant) */}
+                        {/* Le flex-grow fait prendre toute la place restante, permettant au contenu de déborder dans l'overflow-y-auto du parent */}
                         <div className="mb-8 flex-grow overflow-y-visible">
                             <ProductDescriptionContent />
                         </div>
@@ -1477,7 +1478,23 @@ const App = () => {
     c => c.node.title.toLowerCase() !== 'nouveautés' && c.node.handle !== 'nouveautes'
   ), [collections]);
   
-  const allProducts = useMemo(() => regularCollections.flatMap(c => c.node.products.edges).map(e => e.node), [regularCollections]);
+  // --- Logique de dédoublonnage des produits pour "Nos Incontournables" (allProducts) ---
+  const allProducts = useMemo(() => {
+    const uniqueProductsMap = new Map();
+    // 1. Aplatir et itérer sur tous les produits des collections régulières
+    const allProductsRaw = regularCollections.flatMap(c => c.node.products.edges).map(e => e.node);
+
+    // 2. Utiliser une Map pour s'assurer que chaque produit (ID) n'est ajouté qu'une seule fois
+    allProductsRaw.forEach(product => {
+        if (!uniqueProductsMap.has(product.id)) {
+            uniqueProductsMap.set(product.id, product);
+        }
+    });
+
+    // 3. Retourner la liste des produits uniques
+    return Array.from(uniqueProductsMap.values());
+  }, [regularCollections]);
+  // --- Fin Logique de dédoublonnage ---
   
   const nouveautesProducts = useMemo(() => newArrivalsCollection
     ? newArrivalsCollection.node.products.edges.map(e => e.node)
@@ -1487,6 +1504,7 @@ const App = () => {
   // LOGIQUE DE FILTRAGE PRINCIPALE DES PRODUITS POUR LA SECTION "LA BOUTIQUE"
   const filteredProducts = useMemo(() => {
     if (!selectedCollectionId || selectedCollectionId === 'all') {
+        // Retourne la liste dédoublonnée
         return allProducts;
     }
     
@@ -1497,6 +1515,7 @@ const App = () => {
         return nouveautesProducts;
       }
       
+      // Si une collection spécifique est sélectionnée, on affiche tous ses produits (doublons potentiels si on change de collection, mais correct pour une seule collection)
       return targetCollection.node.products.edges.map(e => e.node);
     }
     
@@ -1665,7 +1684,8 @@ const App = () => {
         onCheckout={() => proceedToCheckout(cartItems)}
       />
       {/* Overlay de fond pour les modales/sidebar */}
-      {(isCartOpen || selectedProduct || selectedDescriptionProduct) && <div className="fixed inset-0 bg-finca-medium/95 backdrop-blur-sm z-40 transition-opacity" onClick={() => { setIsCartOpen(false); setSelectedProduct(null); setSelectedDescriptionProduct(null); }} />}
+      {/* MISE À JOUR: Overlay entièrement opaque sur mobile (jusqu'à lg) */}
+      {(isCartOpen || selectedProduct || selectedDescriptionProduct) && <div className="fixed inset-0 bg-finca-medium/95 lg:bg-finca-medium/95 backdrop-blur-sm z-40 transition-opacity" onClick={() => { setIsCartOpen(false); setSelectedProduct(null); setSelectedDescriptionProduct(null); }} />}
       
       
       {/* Rendu Conditionnel des Vues */}
