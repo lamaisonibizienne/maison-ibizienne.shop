@@ -706,10 +706,56 @@ const CartSidebar = ({ cartItems, isCartOpen, onClose, onUpdateQuantity, onRemov
   );
 };
 
+// --- NOUVEAU COMPOSANT : Menu Mobile Sidebar ---
+const MobileMenuSidebar = ({ isMenuOpen, onClose, onNavigate }) => {
+    // Liste des liens de navigation basés sur les ancres de la Navbar desktop
+    const NAV_LINKS = [
+        { name: "Collections", href: "#collections" },
+        { name: "Coaching", href: "#coaching" },
+        { name: "Journal", href: "#journal-section" },
+        { name: "Contact", href: "#contact" }, 
+    ];
+
+    const handleLinkClick = (e, href) => {
+        e.preventDefault();
+        onClose(); // Ferme le menu
+        // Simuler le défilement vers l'ancre
+        document.getElementById(href.substring(1))?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    return (
+        <div 
+            className={`fixed top-0 left-0 h-full w-full max-w-xs bg-white shadow-2xl z-50 transition-transform duration-500 ease-in-out border-r border-stone-200 lg:hidden ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        >
+            <div className="flex justify-between items-center p-6 border-b border-stone-200">
+                <h2 className="font-serif text-2xl text-stone-900">Menu</h2>
+                <button onClick={onClose} className="text-stone-500 hover:text-stone-900"><X size={24} /></button>
+            </div>
+
+            <nav className="p-6">
+                <ul className="space-y-4">
+                    {NAV_LINKS.map((link, index) => (
+                        <li key={index}>
+                            <a 
+                                href={link.href} 
+                                onClick={(e) => handleLinkClick(e, link.href)}
+                                className="font-serif text-lg text-stone-900 hover:text-stone-500 transition-colors block py-2"
+                            >
+                                {link.name}
+                            </a>
+                        </li>
+                    ))}
+                </ul>
+            </nav>
+        </div>
+    );
+};
+// --- FIN NOUVEAU COMPOSANT ---
+
 /**
  * Barre de navigation réactive.
  */
-const Navbar = ({ logo, cartCount, onOpenCart, isArticleView, onBack }) => {
+const Navbar = ({ logo, cartCount, onOpenCart, isArticleView, onBack, onOpenMenu }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   
   useEffect(() => {
@@ -760,8 +806,8 @@ const Navbar = ({ logo, cartCount, onOpenCart, isArticleView, onBack }) => {
           </div>
         </div>
         {/* Navigation mobile: Menu (gauche) et Panier (droite) */}
-        <div className="lg:hidden absolute left-6 top-6"><Menu size={24} className="text-stone-900" /></div>
-        <div className="lg:hidden absolute right-6 top-6" onClick={onOpenCart}>
+        <div className="lg:hidden absolute left-6 top-6 cursor-pointer" onClick={onOpenMenu}><Menu size={24} className="text-stone-900" /></div>
+        <div className="lg:hidden absolute right-6 top-6 cursor-pointer" onClick={onOpenCart}>
           <ShoppingBag size={24} className="text-stone-900" />
           {cartCount > 0 && <span className="absolute -top-1 -right-1 bg-stone-900 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full">{cartCount}</span>}
         </div>
@@ -905,7 +951,7 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
                     </div>
                     
                     {/* Colonne 2: Détails, Prix et Actions (Défilante) */}
-                    {/* HAUTEUR AJUSTÉE : le reste de la hauteur (`h-[calc(100%-50vh)]`) sur mobile pour garantir le scroll lisible */}
+                    {/* CORRECTION: Application de overflow-y-auto sur mobile (pas besoin sur lg car c'est déjà h-full) */}
                     <div className="lg:col-span-1 p-8 md:p-10 flex flex-col h-[calc(100%-50vh)] lg:h-full overflow-y-auto">
                         
                         {/* Bloc 1: Titre et Prix (Fixé en haut) */}
@@ -924,8 +970,8 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
                         </div>
                         
                         {/* Bloc 2: Description (Défilant) */}
-                        {/* Le flex-grow fait prendre toute la place restante, permettant au contenu de déborder dans l'overflow-y-auto du parent */}
-                        <div className="mb-8 flex-grow overflow-y-visible">
+                        {/* flex-grow et overflow-y-visible pour s'assurer que le contenu utilise l'overflow du parent s'il le faut. */}
+                        <div className="mb-8 flex-grow">
                             <ProductDescriptionContent />
                         </div>
 
@@ -1454,6 +1500,8 @@ const App = () => {
   const [loading, setLoading] = useState(true);
   const [cartItems, setCartItems] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  // NOUVEAU : État pour le menu mobile
+  const [isMenuOpen, setIsMenuOpen] = useState(false); 
   const [selectedProduct, setSelectedProduct] = useState(null); // Modale de sélection de variante
   const [selectedDescriptionProduct, setSelectedDescriptionProduct] = useState(null); // Modale de description détaillée
   const [selectedArticle, setSelectedArticle] = useState(null); 
@@ -1654,6 +1702,14 @@ const App = () => {
         onOpenCart={() => setIsCartOpen(true)} 
         isArticleView={isArticleView}
         onBack={handleBackToMain}
+        // NOUVEAU: Ajout du gestionnaire d'ouverture de menu mobile
+        onOpenMenu={() => setIsMenuOpen(true)}
+      />
+
+      {/* Menu Mobile Sidebar */}
+      <MobileMenuSidebar 
+          isMenuOpen={isMenuOpen}
+          onClose={() => setIsMenuOpen(false)}
       />
       
       {/* Modale de Description */}
@@ -1684,8 +1740,8 @@ const App = () => {
         onCheckout={() => proceedToCheckout(cartItems)}
       />
       {/* Overlay de fond pour les modales/sidebar */}
-      {/* MISE À JOUR: Overlay entièrement opaque sur mobile (jusqu'à lg) */}
-      {(isCartOpen || selectedProduct || selectedDescriptionProduct) && <div className="fixed inset-0 bg-finca-medium/95 lg:bg-finca-medium/95 backdrop-blur-sm z-40 transition-opacity" onClick={() => { setIsCartOpen(false); setSelectedProduct(null); setSelectedDescriptionProduct(null); }} />}
+      {/* MISE À JOUR: L'overlay doit couvrir les deux menus/modales actifs */}
+      {(isCartOpen || selectedProduct || selectedDescriptionProduct || isMenuOpen) && <div className="fixed inset-0 bg-finca-medium/95 lg:bg-finca-medium/95 backdrop-blur-sm z-40 transition-opacity" onClick={() => { setIsCartOpen(false); setSelectedProduct(null); setSelectedDescriptionProduct(null); setIsMenuOpen(false); }} />}
       
       
       {/* Rendu Conditionnel des Vues */}
