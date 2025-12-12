@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { ShoppingBag, X, Instagram, Facebook, Loader, ChevronRight, Menu, ArrowLeft, Heart, ChevronDown, Minus, Plus, ChevronLeft, Send, MessageSquare, Eye } from 'lucide-react';
+import { ShoppingBag, X, Instagram, Facebook, Loader, ChevronRight, Menu, ArrowLeft, Heart, ChevronDown, Minus, Plus, ChevronLeft, MessageSquare, Eye } from 'lucide-react';
 
 // ==============================================================================
 // 1. CONFIGURATION TECHNIQUE & STYLE
 // ==============================================================================
 
 // Configuration Tailwind CSS (Assumée disponible dans l'environnement)
+// Les polices 'Inter' et 'Playfair Display' sont définies ici pour être utilisées via font-sans et font-serif.
 const TailwindConfig = `
   tailwind.config = {
     theme: {
@@ -41,13 +42,37 @@ const SHOPIFY_DOMAIN = (typeof process !== 'undefined' && process.env.REACT_APP_
 const API_VERSION = '2024-01';
 
 
-// Définition des couleurs principales pour les composants
+// Définition des couleurs principales pour les composants (déjà faites mais conservées)
 const COLOR_LIGHT = '#FDFBF7'; // finca-light
 const COLOR_MEDIUM = '#F0EBE5'; // finca-medium
 
 
 // ==============================================================================
-// 2. CONFIGURATION DU CONTENU (TEXTES, LIENS, IMAGES - Modifiables ici)
+// 2. DESIGN & CONFIGURATION (AJOUTÉ : Définition des largeurs d'items)
+// ==============================================================================
+
+/**
+ * Configuration des largeurs responsives pour les éléments des carrousels
+ * et des filtres de contenu.
+ */
+const DESIGN_CONFIG = {
+    // Largeurs d'éléments pour les carrousels (Tailwind classes)
+    // Mobile: 80vw, Tablet: 50vw, Desktop: 30-20vw
+    COLLECTION_ITEM_WIDTH: 'w-[80vw] sm:w-[50vw] md:w-[40vw] lg:w-[30vw] xl:w-[25vw]',
+    PRODUCT_ITEM_WIDTH: 'w-[80vw] sm:w-[50vw] md:w-[40vw] lg:w-[30vw] xl:w-[25vw]',
+    JOURNAL_ITEM_WIDTH: 'w-[80vw] sm:w-[50vw] md:w-[40vw] lg:w-[30vw] xl:w-[25vw]',
+    // Nouveautés plus petits pour un effet galerie dense
+    NOUVEAUTES_ITEM_WIDTH: 'w-[60vw] sm:w-[45vw] md:w-[30vw] lg:w-[25vw] xl:w-[20vw]',
+
+    // Filtres de contenu pour la vue Article (pour retirer le contenu CMS indésirable)
+    ARTICLE_CLEANUP_FILTERS: [
+        'Pour en savoir plus sur les produits présentés' // Exemple de bloc souvent indésirable dans le corps du texte
+    ],
+};
+
+
+// ==============================================================================
+// 3. CONFIGURATION DU CONTENU (TEXTES, LIENS, IMAGES - Modifiables ici)
 // ==============================================================================
 
 /**
@@ -108,7 +133,7 @@ const SITE_CONFIG = {
     INSTAGRAM_URL: "https://www.instagram.com/lamaisonibizienne", 
     INSTAGRAM_HANDLE: "@lamaisonibizienne",
     FACEBOOK_URL: "https://www.facebook.com/lamaisonibizienne", 
-    TIKTOK_URL: "https://www.tiktok.com/@la.maison.ibizienne",
+    TIKTOK_URL: "https://www.tiktok.com/@la.maison.ibizienne", 
   },
   
   // --- TEXTES DIVERS / NAVIGATION ---
@@ -128,61 +153,13 @@ const SITE_CONFIG = {
 
 
 // ==============================================================================
-// 3. PARAMÈTRES DE DESIGN & NETTOYAGE
-// ==============================================================================
-
-const DESIGN_CONFIG = {
-  COLLECTION_ITEM_WIDTH: "w-[80vw] md:w-[400px] lg:w-[450px]",
-  PRODUCT_ITEM_WIDTH: "w-[60vw] sm:w-[50vw] md:w-[350px] lg:w-[300px]",
-  JOURNAL_ITEM_WIDTH: "w-[65vw] sm:w-[45vw] md:w-[280px] lg:w-[300px]",
-  // Nouvelle largeur pour les vignettes carrées
-  NOUVEAUTES_ITEM_WIDTH: "w-[38vw] sm:w-[30vw] md:w-[200px] lg:w-[250px]",
-
-  // Filtres pour nettoyer le contenu HTML importé des articles de blog Shopify
-  ARTICLE_CLEANUP_FILTERS: [
-    "Salon méditerranéen lumineux avec décoration naturelle harmonieuse",
-    "Maison moderne avec extension – agrandissement et permis de construire",
-    "www\\.lamaisonibizienne\\.com",
-    "erreurs déco qui nuisent à l'harmonie d'un intérieur – et comment les éviter",
-    "Un intérieur harmonieux se joue dans les détails\\. Découvrez 5 erreurs fréquentes en décoration d'intérieur et nos conseils simples pour les éviter\\.",
-    "Immobilier haut de gamme",
-    "Par La Maison Ibizienne – Architecture, Décoration & Accompagnement",
-    "Ce que nous observons depuis le terrain, entre Ibiza, la Côte d'Azur et les villages cachés de Corse\\.",
-    "tendances été 2025 : Ce que veulent les acheteurs exigeants aujourd'hui",
-    "\\(et ce qu'ils fuient\\)",
-    "Mieux vaut laisser vivre l'intérieur avant de le remplir\\.",
-    "Pour vous aider à naviguer dans ce marché, nous avons condensé les 5 tendances majeures et les 5 erreurs à éviter absolument\\.",
-    "Ce que nous proposons",
-    "Chez La Maison Ibizienne, nous ne vous aidez pas simplement à acheter ou vendre\\.",
-    "Nous révélons le potentiel de votre bien\\.",
-    "Et nous créons un environnement qui parle à vos futurs acquéreurs dès la première visite\\.",
-    "Un excès d'éclectisme peut nuire à la cohérence visuelle\\. Il est important de choisir une ligne directrice pour créer une harmonie fluide et agréable\\.",
-    "Une maison mal éclairée semble triste, même bien décorée\\. Multipliez les sources douces : suspensions, lampes d'ambiance, lumière naturelle\\.",
-    "Choisir une couleur sans penser au reste de l'espace \\(mobilier, sol, lumière\\) peut rompre l'équilibre\\. Privilégiez une palette cohérente et naturelle\\.",
-    "Le vide n'est pas un manque, mais une respiration\\. Des zones dégagées donnent du relief et valorisent les éléments décoratifs présents\\.",
-    // Fragments JSON potentiellement visibles
-    "\"@context\":",
-    "\"@type\":",
-    "\"headline\":",
-    "\"description\":",
-    "\"image\":",
-    "\"author\":",
-    "\"name\":",
-    "\"url\":",
-    "\"datePublished\":",
-    "\"publisher\":",
-    "\"mainEntityOfPage\":",
-    "\"https://www\\.votresite\\.com/assets/[a-zA-Z0-9-]+\\.jpg\"",
-    "\\{\\s*",
-    "\\}\\s*",
-  ]
-}
-
-
-// ==============================================================================
 // 4. HOOKS ET LOGIQUE D'ANIMATION
 // ==============================================================================
 
+/**
+ * Hook pour détecter l'intersection d'un élément avec le viewport,
+ * utilisé pour les animations de type "fade in on scroll".
+ */
 const useIntersectionObserver = (options) => {
   const [isIntersecting, setIsIntersecting] = useState(false);
   const targetRef = useRef(null);
@@ -200,6 +177,7 @@ const useIntersectionObserver = (options) => {
 
     return () => {
       if (targetRef.current) {
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         observer.unobserve(targetRef.current);
       }
     };
@@ -208,13 +186,16 @@ const useIntersectionObserver = (options) => {
   return [targetRef, isIntersecting];
 };
 
+/**
+ * Composant wrapper pour appliquer une animation de fondu et de légère translation
+ * lors du défilement dans le viewport.
+ */
 const ScrollFadeIn = ({ children, delay = 0, threshold = 0.1, className = "", initialScale = 1.0 }) => {
   const [ref, isVisible] = useIntersectionObserver({ threshold: threshold });
   
   const baseClasses = 'transition-all duration-1000 ease-out';
   const visibleClasses = 'opacity-100 translate-y-0 scale-100';
   
-  // Correction de fluidité: Réduction de la translation verticale à translate-y-8
   const hiddenClasses = `opacity-0 translate-y-8 scale-[${initialScale}]`;
 
   return (
@@ -228,40 +209,33 @@ const ScrollFadeIn = ({ children, delay = 0, threshold = 0.1, className = "", in
   );
 };
 
-const ScrollStickyWrapper = ({ children, bgColor, zIndex, minHeightClass = 'min-h-[120vh]' }) => {
-    return (
-        <div 
-            className={`relative ${minHeightClass}`} 
-            style={{ backgroundColor: bgColor }}
-        >
-            <div 
-                className="sticky top-0 w-full h-full"
-                style={{ zIndex: zIndex }}
-            >
-                {children}
-            </div>
-        </div>
-    );
-};
-
 
 // ==============================================================================
 // 5. LOGIQUE API & FALLBACKS
 // ==============================================================================
 
+/**
+ * Simule la redirection vers le paiement Shopify.
+ * @param {Array} cartItems - Les articles du panier.
+ */
 const proceedToCheckout = (cartItems) => {
   if (cartItems.length === 0) return;
+  // Construction d'une chaîne d'items pour le lien direct vers le panier Shopify
   const itemsString = cartItems.map(item => {
+    // Tente d'extraire l'ID numérique de la variante si le format est gid://shopify/...
     let variantId = item.selectedVariantId?.split('/').pop(); 
-    if (!variantId) variantId = item.variants?.edges?.[0]?.node?.id?.split('/').pop();
     if (!variantId) variantId = item.id.split('/').pop();
     return `${variantId}:${item.quantity || 1}`;
   }).join(',');
   
-  // Simulation de la redirection vers le paiement
+  // Redirection (simulation d'ouverture dans un nouvel onglet)
   window.open(`https://${SHOPIFY_DOMAIN}/cart/${itemsString}`, '_blank');
 };
 
+/**
+ * Effectue la requête GraphQL vers l'API Storefront de Shopify.
+ * Inclut les produits, collections et articles de blog nécessaires.
+ */
 async function fetchShopifyData() {
   const query = `
   {
@@ -275,7 +249,7 @@ async function fetchShopifyData() {
             edges {
               node {
                 id title handle description productType tags
-                priceRange { minVariantPrice { amount currencyCode } }
+                priceRange { minVariantPrice { amount currencyCode } maxVariantPrice { amount } }
                 images(first: 5) { edges { node { url } } }
                 variants(first: 20) { 
                   edges { 
@@ -283,11 +257,11 @@ async function fetchShopifyData() {
                       id 
                       title 
                       price { amount currencyCode }
+                      compareAtPrice { amount }
                       image { url }
                     } 
                   } 
                 }
-                # Pour la description, nous avons besoin de contentHtml
                 descriptionHtml
               }
             }
@@ -332,6 +306,10 @@ async function fetchShopifyData() {
       body: JSON.stringify({ query }),
     });
     const json = await response.json();
+    if (json.errors) {
+        console.error("GraphQL Errors:", json.errors);
+        return null;
+    }
     return json.data;
   } catch (error) { 
     console.error("Erreur lors de la récupération des données Shopify:", error);
@@ -350,18 +328,29 @@ const FALLBACK_DATA = {
 // 6. COMPOSANTS DESIGN
 // ==============================================================================
 
-const CollectionCard = ({ collection, onClickProduct, onQuickAddToCart }) => {
-  // CollectionCard est principalement pour naviguer dans une catégorie,
-  // nous affichons l'image de la collection, ou la première du premier produit.
+/**
+ * Carte affichant une collection (Univers).
+ * Le clic déclenche le filtrage de la section produits.
+ */
+const CollectionCard = ({ collection, onFilterCollection }) => {
   const product = collection.products?.edges?.[0]?.node;
   const image = collection.image?.url || product?.images?.edges?.[0]?.node?.url;
 
+  const handleCollectionClick = (e) => {
+    e.stopPropagation();
+    onFilterCollection(collection.id);
+  };
+
   return (
-    <div className="bg-finca-medium group cursor-pointer hover:shadow-lg transition-shadow duration-300 rounded-lg overflow-hidden">
+    <div 
+      onClick={handleCollectionClick} 
+      className="bg-finca-medium group cursor-pointer hover:shadow-lg transition-shadow duration-300 rounded-lg overflow-hidden"
+    >
       <div className="relative aspect-[3/4] overflow-hidden bg-stone-100">
         <img 
           src={image || "https://placehold.co/800x1000/F0EBE5/7D7D7D?text=Collection"} 
           alt={collection.title} 
+          onError={(e) => {e.target.onerror = null; e.target.src="https://placehold.co/800x1000/F0EBE5/7D7D7D?text=Collection"}}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-stone-900/5 transition-opacity duration-300 group-hover:opacity-0"></div>
@@ -371,35 +360,29 @@ const CollectionCard = ({ collection, onClickProduct, onQuickAddToCart }) => {
         <p className="text-stone-500 text-xs uppercase tracking-widest font-sans">
           {collection.products?.edges?.length || 0} Produits
         </p>
-        {/* Bouton pour ajouter le premier produit de la collection (si disponible) */}
-        {product && (
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onQuickAddToCart(product);
-            }}
-            className="mt-4 flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold text-stone-900 hover:text-stone-500 transition-colors group"
-          >
-            Ajouter au panier <ShoppingBag size={14} className="group-hover:translate-x-1 transition-transform" />
-          </button>
-        )}
+        
+        <div className="mt-4 flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold text-stone-900 transition-colors">
+            Sélectionner l'Univers <ChevronRight size={14} />
+        </div>
       </div>
     </div>
   );
 };
 
-// Composant pour l'affichage des produits avec carrousel sur interaction (touch/hover)
-const HoverImageCarouselCard = ({ product, onClick, onAddToCart, onShowDescription, aspectClass }) => {
+/**
+ * Carte de produit avec carrousel sur survol/touch et boutons d'action flottants.
+ */
+const HoverImageCarouselCard = ({ product, onAddToCart, onShowDescription, aspectClass, PRODUCT_ITEM_WIDTH }) => {
   const images = product.images?.edges?.map(e => e.node.url) || [];
   const [imageIndex, setImageIndex] = useState(0); 
   const [isHovered, setIsHovered] = useState(false);
+  // Détecte si l'appareil est tactile
   const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
-  // Gère l'état de survol pour l'apparition des boutons (uniquement sur desktop)
   const handleMouseEnter = () => !isTouchDevice && setIsHovered(true);
   const handleMouseLeave = () => !isTouchDevice && setIsHovered(false);
 
-  // LOGIQUE DE NAVIGATION POUR MOBILE/TACTILE
+  // Naviguer au changement d'image pour les appareils tactiles
   const goNext = (e) => {
     e.stopPropagation();
     setImageIndex((prevIndex) => (prevIndex + 1) % images.length);
@@ -410,9 +393,9 @@ const HoverImageCarouselCard = ({ product, onClick, onAddToCart, onShowDescripti
     setImageIndex((prevIndex) => (prevIndex - 1 + images.length) % images.length);
   };
   
-  // LOGIQUE DE NAVIGATION POUR DESKTOP (basée sur la position de la souris)
+  // Navigation au survol (Desktop)
   const handleMouseMove = (e) => {
-    if (!isTouchDevice && images.length > 1) {
+    if (!isTouchDevice && images.length > 1 && isHovered) {
       const card = e.currentTarget;
       const rect = card.getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -430,13 +413,17 @@ const HoverImageCarouselCard = ({ product, onClick, onAddToCart, onShowDescripti
   const currentImage = images[imageIndex] || "https://placehold.co/800x1000/F0EBE5/7D7D7D?text=Produit";
   const price = product.priceRange?.minVariantPrice?.amount || '0';
   const currency = product.priceRange?.minVariantPrice?.currencyCode || 'EUR';
+
+  // Fonction de formatage du prix pour affichage
+  const formatPriceDisplay = (price) => {
+    const amount = parseFloat(price);
+    return `${amount.toFixed(2)} ${currency}`;
+  };
   
-  // Déterminer si le bouton flottant "Add to Cart" doit être visible
   const showFloatingButtons = isHovered || isTouchDevice;
 
   return (
     <div 
-      // Sur mobile, le clic ouvre la description (la logique de l'Œil)
       onClick={(e) => { 
         if (isTouchDevice) {
             e.preventDefault(); 
@@ -454,12 +441,11 @@ const HoverImageCarouselCard = ({ product, onClick, onAddToCart, onShowDescripti
           src={currentImage} 
           alt={product.title} 
           key={currentImage} 
+          onError={(e) => {e.target.onerror = null; e.target.src="https://placehold.co/800x1000/F0EBE5/7D7D7D?text=Produit"}}
           className="w-full h-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
         />
         
-        {/* --- ÉLÉMENTS FLOTTANTS DE CONVERSION (Style Zoco Home) --- */}
-
-        {/* Bouton Quick View / Eye icon (en haut à droite, Ouvre la description) */}
+        {/* Bouton Quick View / Eye icon */}
         <button 
           onClick={(e) => { e.stopPropagation(); onShowDescription(product); }}
           className={`absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full text-stone-900 transition-opacity duration-300 z-30 
@@ -469,14 +455,13 @@ const HoverImageCarouselCard = ({ product, onClick, onAddToCart, onShowDescripti
           <Eye size={16} strokeWidth={1.5} />
         </button>
 
-        {/* Bouton "Ajouter au Panier" (Flottant en bas, Ouvre le sélecteur de variantes/quantité) */}
+        {/* Bouton "Ajouter au Panier" (Flottant en bas) */}
         <div 
             className={`absolute inset-x-0 bottom-0 z-30 transition-transform duration-300 
                         ${showFloatingButtons ? 'translate-y-0' : 'translate-y-full'}`}
         >
             <button 
                 onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
-                // Fond noir opaque comme chez Zoco Home
                 className="w-full bg-stone-900 text-white py-3 uppercase tracking-widest text-[11px] font-bold hover:bg-stone-700 transition-colors"
                 aria-label="Ajouter au panier (choix des options)"
             >
@@ -484,7 +469,7 @@ const HoverImageCarouselCard = ({ product, onClick, onAddToCart, onShowDescripti
             </button>
         </div>
         
-        {/* Navigation Mobile/Tactile (Visible si images > 1 ET appareil tactile touché) */}
+        {/* Navigation Mobile/Tactile */}
         {isTouchDevice && images.length > 1 && isHovered && (
             <>
                 <button 
@@ -497,7 +482,7 @@ const HoverImageCarouselCard = ({ product, onClick, onAddToCart, onShowDescripti
                     onClick={goNext} 
                     className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-black/30 text-white rounded-full transition-opacity hover:bg-black/50 z-30"
                 >
-                    <ChevronRight size={16} />
+                    <ChevronRight size={16} /> 
                 </button>
             </>
         )}
@@ -521,24 +506,26 @@ const HoverImageCarouselCard = ({ product, onClick, onAddToCart, onShowDescripti
       <div className="p-4 pt-6 text-center">
         <h3 className="text-base font-serif text-stone-900 mb-1">{product.title}</h3>
         <p className="text-stone-500 text-[11px] uppercase tracking-widest font-sans mb-2">{product.productType}</p>
-        <p className="text-sm font-medium text-stone-900">{Math.round(parseFloat(price))} {currency}</p>
+        {/* Affichage du prix correct */}
+        <p className="text-sm font-medium text-stone-900">{formatPriceDisplay(price)}</p>
       </div>
     </div>
   );
 };
 
 
-// Application de la nouvelle carte aux produits réguliers (3/4 aspect)
 const ProductCard = (props) => (
   <HoverImageCarouselCard {...props} aspectClass="aspect-[3/4]" />
 );
 
-// Application de la nouvelle carte aux nouveautés (1/1 aspect)
 const NouveautesProductCard = (props) => (
   <HoverImageCarouselCard {...props} aspectClass="aspect-[1/1]" />
 );
 
 
+/**
+ * Carte d'article de blog.
+ */
 const ArticleCard = ({ article, onClick }) => {
   const image = article.node.image?.url;
   
@@ -551,6 +538,7 @@ const ArticleCard = ({ article, onClick }) => {
         <img 
           src={image || "https://placehold.co/800x600/F0EBE5/7D7D7D?text=Journal"} 
           alt={article.node.title} 
+          onError={(e) => {e.target.onerror = null; e.target.src="https://placehold.co/800x600/F0EBE5/7D7D7D?text=Journal"}}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
       </div>
@@ -558,17 +546,18 @@ const ArticleCard = ({ article, onClick }) => {
         <span className="text-[10px] uppercase tracking-widest font-sans text-stone-500 block mb-2">
             {new Date(article.node.publishedAt).toLocaleDateString()}
         </span>
-        <h3 className="text-xl font-serif text-stone-900 leading-snug mb-2 group-hover:underline">{article.node.title}</h3>
+        <h3 className="text-xl font-serif text-stone-900 leading-snug mb-2">{article.node.title}</h3>
         <p className="text-stone-500 text-sm italic line-clamp-2">{article.node.excerpt}</p>
       </div>
     </div>
   );
 };
 
-
+/**
+ * Composant de carrousel réutilisable avec navigation par flèches.
+ */
 const Carousel = ({ title, subtitle, anchorId, itemWidth, children }) => {
   const scrollContainerRef = useRef(null);
-  const [ref, isVisible] = useIntersectionObserver({ threshold: 0.2 });
 
   const scroll = (direction) => {
     if (scrollContainerRef.current) {
@@ -585,8 +574,7 @@ const Carousel = ({ title, subtitle, anchorId, itemWidth, children }) => {
   };
 
   return (
-    // Remplacement de py-24 par py-16
-    <div className="flex flex-col items-center justify-center min-h-[80vh] w-full bg-finca-light">
+    <div className="flex flex-col items-center justify-center min-h-[50vh] w-full bg-finca-light">
       <section id={anchorId} className="w-full py-16">
         <div className="max-w-[1800px] mx-auto px-6 md:px-12">
           <ScrollFadeIn threshold={0.1}>
@@ -622,14 +610,12 @@ const Carousel = ({ title, subtitle, anchorId, itemWidth, children }) => {
 
           <div
             ref={scrollContainerRef}
-            // Changement pour un espace plus petit et style plus fun si c'est la section nouveauté
-            className={`flex overflow-x-scroll snap-x snap-mandatory ${anchorId === 'nouveautes' ? 'space-x-4 md:space-x-6' : 'space-x-6 md:space-x-10'} pb-4 md:pb-8 transition-shadow duration-500`}
+            className={`flex overflow-x-scroll snap-x snap-mandatory space-x-6 md:space-x-10 pb-4 md:pb-8 transition-shadow duration-500`}
             style={{ 
               scrollbarWidth: 'none', 
               msOverflowStyle: 'none', 
+              WebkitOverflowScrolling: 'touch',
             }}
-            onMouseEnter={() => scrollContainerRef.current.style.boxShadow = 'inset 0 -5px 10px rgba(0,0,0,0.05)'}
-            onMouseLeave={() => scrollContainerRef.current.style.boxShadow = 'none'}
           >
             {React.Children.map(children, (child, index) => (
               <ScrollFadeIn key={index} delay={index * 100} threshold={0.5} className={`flex-shrink-0 snap-center ${itemWidth}`}>
@@ -643,17 +629,19 @@ const Carousel = ({ title, subtitle, anchorId, itemWidth, children }) => {
   );
 };
 
+/**
+ * Sidebar du panier d'achat.
+ */
 const CartSidebar = ({ cartItems, isCartOpen, onClose, onUpdateQuantity, onRemove, onCheckout }) => {
   const subtotal = cartItems.reduce((sum, item) => {
     return sum + (parseFloat(item.price) * item.quantity);
   }, 0);
 
-  // Formattage du prix (simplifié)
-  const formatPrice = (amount) => `${Math.round(amount)} €`;
+  // Mise à jour: Affichage du prix avec 2 décimales
+  const formatPrice = (amount) => `${parseFloat(amount).toFixed(2)} €`;
 
   return (
     <div 
-      // FOND OPAQUE BLANC PUR pour maximiser la lisibilité
       className={`fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 transition-transform duration-500 ease-in-out border-l border-stone-200 ${isCartOpen ? 'translate-x-0' : 'translate-x-full'}`}
     >
       <div className="flex justify-between items-center p-6 border-b border-stone-200">
@@ -669,7 +657,12 @@ const CartSidebar = ({ cartItems, isCartOpen, onClose, onUpdateQuantity, onRemov
             {cartItems.map(item => (
               <div key={item.variantId} className="flex gap-4 border-b border-stone-100 pb-4 last:border-b-0">
                 <div className="w-20 h-24 bg-stone-100 flex-shrink-0 rounded-sm overflow-hidden">
-                  <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                  <img 
+                    src={item.image || "https://placehold.co/80x96/F0EBE5/7D7D7D?text=Image"} 
+                    alt={item.title} 
+                    onError={(e) => {e.target.onerror = null; e.target.src="https://placehold.co/80x96/F0EBE5/7D7D7D?text=Image"}}
+                    className="w-full h-full object-cover" 
+                  />
                 </div>
                 <div className="flex flex-col flex-grow">
                   <div className="flex justify-between items-start">
@@ -698,6 +691,7 @@ const CartSidebar = ({ cartItems, isCartOpen, onClose, onUpdateQuantity, onRemov
       <div className="absolute bottom-0 w-full p-6 bg-white border-t border-stone-200">
         <div className="flex justify-between mb-4 text-lg font-bold text-stone-900">
           <span>Sous-total:</span>
+          {/* Utilisation de la nouvelle fonction formatPrice */}
           <span>{formatPrice(subtotal)}</span>
         </div>
         <button 
@@ -712,6 +706,9 @@ const CartSidebar = ({ cartItems, isCartOpen, onClose, onUpdateQuantity, onRemov
   );
 };
 
+/**
+ * Barre de navigation réactive.
+ */
 const Navbar = ({ logo, cartCount, onOpenCart, isArticleView, onBack }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   
@@ -743,24 +740,26 @@ const Navbar = ({ logo, cartCount, onOpenCart, isArticleView, onBack }) => {
 
   return (
     <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-700 border-b ${isScrolled ? 'bg-finca-light/95 backdrop-blur-md border-stone-200 py-4 shadow-sm' : 'bg-transparent border-transparent py-6'}`}>
-      <div className="max-w-[1800px] mx-auto px-6 md:px-12 grid grid-cols-12 items-start">
-        <div className="col-span-4 hidden lg:flex gap-8 text-[10px] uppercase tracking-[0.25em] font-serif text-stone-900 pt-1">
-          <a href="#collections" className="hover:text-stone-500 transition-colors whitespace-nowrap">Collections</a>
-          <a href="#coaching" className="hover:text-stone-500 transition-colors whitespace-nowrap">Coaching</a>
-          <a href="#journal-section" className="hover:text-stone-500 transition-colors whitespace-nowrap">Journal</a>
+      <div className="max-w-[1800px] mx-auto px-6 md:px-12 grid grid-cols-12 items-center">
+        <div className="col-span-4 hidden lg:flex gap-8 text-[10px] uppercase tracking-[0.25em] font-serif text-stone-900">
+          <a href="#collections" className="hover:text-stone-500 transition-colors whitespace-nowrap" onClick={(e) => { e.preventDefault(); document.getElementById('collections')?.scrollIntoView({ behavior: 'smooth' }); }}>Collections</a>
+          <a href="#coaching" className="hover:text-stone-500 transition-colors whitespace-nowrap" onClick={(e) => { e.preventDefault(); document.getElementById('coaching')?.scrollIntoView({ behavior: 'smooth' }); }}>Coaching</a>
+          <a href="#journal-section" className="hover:text-stone-500 transition-colors whitespace-nowrap" onClick={(e) => { e.preventDefault(); document.getElementById('journal-section')?.scrollIntoView({ behavior: 'smooth' }); }}>Journal</a>
         </div>
-        <div className="col-span-12 lg:col-span-4 flex justify-center order-first lg:order-none mb-4 lg:mb-0 lg:mt-5">
+        {/* Suppression de lg:mt-5 pour un centrage vertical plus propre */}
+        <div className="col-span-12 lg:col-span-4 flex justify-center order-first lg:order-none mb-4 lg:mb-0">
           <a href="#top" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:opacity-80 transition-opacity">
             <LogoComponent />
           </a>
         </div>
-        <div className="col-span-4 hidden lg:flex justify-end items-center gap-8 pt-1">
+        <div className="col-span-4 hidden lg:flex justify-end items-center gap-8">
           <div className="relative cursor-pointer hover:opacity-60 transition-opacity flex items-center gap-2" onClick={onOpenCart}>
             <span className="hidden lg:inline-block text-[10px] uppercase tracking-[0.2em] font-serif mr-2 align-middle text-stone-900">Panier</span>
             <ShoppingBag size={18} strokeWidth={1.5} className="inline-block align-middle text-stone-900" />
             {cartCount > 0 && <span className="absolute -top-1 -right-1 bg-stone-900 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full">{cartCount}</span>}
           </div>
         </div>
+        {/* Navigation mobile: Menu (gauche) et Panier (droite) */}
         <div className="lg:hidden absolute left-6 top-6"><Menu size={24} className="text-stone-900" /></div>
         <div className="lg:hidden absolute right-6 top-6" onClick={onOpenCart}>
           <ShoppingBag size={24} className="text-stone-900" />
@@ -771,17 +770,20 @@ const Navbar = ({ logo, cartCount, onOpenCart, isArticleView, onBack }) => {
   );
 };
 
+/**
+ * Section Héro avec vidéo en fond et texte centré.
+ */
 const HeroSection = ({ onScroll }) => (
   <div id="top" className="relative h-[95vh] w-full flex flex-col justify-center items-center text-center px-4 overflow-hidden bg-finca-medium">
     <div className="absolute inset-0 z-0">
-      <video className="w-full h-full object-cover animate-fade-in" autoPlay loop muted playsInline>
+      <video className="w-full h-full object-cover" autoPlay loop muted playsInline>
         <source src={SITE_CONFIG.HERO.VIDEO_URL} type="video/mp4" />
       </video>
       <div className="absolute inset-0 bg-stone-900/10" />
     </div>
-    <div className="relative z-10 pt-40 max-w-4xl animate-slide-up">
+    <div className="relative z-10 pt-40 max-w-4xl">
       <ScrollFadeIn delay={200} threshold={0.1}>
-      <div className="bg-white/15 backdrop-blur-sm border border-white/20 p-8 md:p-14 inline-block shadow-2xl">
+      <div className="bg-white/15 backdrop-blur-sm border border-white/20 p-8 md:p-14 inline-block shadow-lg">
         <span className="text-[10px] uppercase tracking-[0.4em] text-white/90 mb-6 block font-serif drop-shadow-md">{SITE_CONFIG.HERO.SURTITLE}</span>
         <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif text-white mb-8 leading-[0.85] tracking-tight drop-shadow-xl whitespace-pre-line">{SITE_CONFIG.HERO.TITLE}</h1>
         <button onClick={onScroll} className="group relative overflow-hidden bg-finca-light text-stone-900 px-10 py-4 uppercase tracking-[0.25em] text-[10px] font-bold transition-all hover:bg-white hover:px-12 shadow-lg rounded-sm">
@@ -793,58 +795,129 @@ const HeroSection = ({ onScroll }) => (
   </div>
 );
 
-// NOUVEAU COMPOSANT : Modale pour afficher la description longue du produit
-const ProductDescriptionModal = ({ product, onClose }) => {
+/**
+ * Modale affichant la description détaillée d'un produit.
+ */
+const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }) => {
     if (!product) return null;
+
+    const firstVariant = product.variants?.edges?.[0]?.node;
+    const currentPrice = parseFloat(firstVariant?.price?.amount || 0);
+    const compareAtPrice = parseFloat(firstVariant?.compareAtPrice?.amount || 0);
+    const isOnSale = compareAtPrice > currentPrice;
+
+    let discountPercentage = 0;
+    if (isOnSale && compareAtPrice > 0) {
+        discountPercentage = Math.round(((compareAtPrice - currentPrice) / compareAtPrice) * 100);
+    }
+
+    const mockSpecifications = [
+        { label: "Matériau principal", value: "Rotin naturel et Bois de Manguier" },
+        { label: "Dimensions (L x H x P)", value: "80cm x 150cm x 40cm" },
+        { label: "Couleur", value: "Naturel, non-traité" },
+        { label: "Origine", value: "Artisanat Indonésien" },
+    ];
     
-    // Utilisation de descriptionHtml pour conserver le formatage du CMS
+    // Rendu du HTML de description du produit
     const ProductDescriptionContent = () => (
         <div 
-            // Application de styles pour les éléments bruts du HTML
             className="text-sm leading-relaxed text-stone-700 [&>p]:mb-4 [&>ul]:list-disc [&>ul]:ml-6 [&>ul]:mb-4 [&>li]:mb-2" 
             dangerouslySetInnerHTML={{ __html: product.descriptionHtml }}
         >
         </div>
     );
+    
+    // Mise à jour: Affichage du prix avec 2 décimales
+    const formatPriceDisplay = (price) => `€${parseFloat(price).toFixed(2)}`;
 
     return (
-        <div className="fixed inset-0 z-[80] bg-black/10 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
-            {/* Contenu de la modale avec la couleur du site */}
-            <div className="bg-finca-light w-full max-w-lg shadow-2xl p-8 relative rounded-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900"><X size={20} /></button>
+        // Overlay
+        <div className="fixed inset-0 z-[80] bg-finca-medium/95 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
+            {/* Contenu de la modale: h-[90vh] pour contrôler la hauteur max et forcer le scroll sur l'intérieur */}
+            <div className="bg-finca-light w-full max-w-5xl shadow-2xl relative rounded-lg h-[90vh]" onClick={(e) => e.stopPropagation()}>
+                <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900 z-50"><X size={24} /></button>
                 
-                <h3 className="font-serif text-2xl text-stone-900 mb-2">{product.title}</h3>
-                <p className="text-stone-500 text-xs uppercase tracking-widest mb-6 border-b border-stone-200 pb-3">Détails et Description</p>
-                
-                {/* Image principale */}
-                <div className="w-full aspect-[4/3] bg-stone-100 mb-6 rounded-md overflow-hidden">
-                    <img 
-                      src={product.images?.edges?.[0]?.node?.url || "https://placehold.co/800x600/F0EBE5/7D7D7D?text=Image"} 
-                      alt={product.title} 
-                      className="w-full h-full object-cover" 
-                    />
-                </div>
-                
-                {/* Description avec mise en forme */}
-                <ProductDescriptionContent />
+                {/* Structure Grid : La hauteur totale de la modale est divisée par la grille */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 h-full"> 
+                    
+                    {/* Colonne 1: Image - Utilise h-full pour prendre toute la hauteur sur grand écran */}
+                    <div className="lg:col-span-2 relative h-[40%] lg:h-full overflow-hidden bg-stone-100 p-8 flex items-center justify-center">
+                        {isOnSale && (
+                               <div className="absolute top-4 left-4 bg-red-600 text-white text-xs px-3 py-1 rounded-sm font-bold z-10">
+                                   Save {discountPercentage}%
+                               </div>
+                        )}
+                        <img 
+                          src={product.images?.edges?.[0]?.node?.url || "https://placehold.co/1000x800/F0EBE5/7D7D7D?text=Image+Produit"} 
+                          alt={product.title} 
+                          onError={(e) => {e.target.onerror = null; e.target.src="https://placehold.co/1000x800/F0EBE5/7D7D7D?text=Image+Produit"}}
+                          // HAUTEUR MAX LÉGÈREMENT RÉDUITE POUR MOBILE/TAILLE FIXE SUR DESKTOP
+                          className="object-contain mx-auto w-full h-full max-h-full lg:max-h-[80vh]" 
+                        />
+                         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+                             {product.images?.edges?.slice(0, 5).map((img, index) => (
+                                 <div key={index} className={`w-2 h-2 rounded-full transition-all ${index === 0 ? 'bg-stone-900' : 'bg-stone-400'}`}></div>
+                             ))}
+                         </div>
+                    </div>
+                    
+                    {/* Colonne 2: Détails, Prix et Actions (Défilante) */}
+                    {/* Utilise flex-col et overflow-y-auto pour forcer le défilement si le contenu déborde de la hauteur (h-full) */}
+                    <div className="lg:col-span-1 p-8 md:p-10 flex flex-col h-[60%] lg:h-full overflow-y-auto">
+                        
+                        {/* Bloc 1: Titre et Prix (Fixé en haut) */}
+                        <div className="pb-6 border-b border-stone-200 mb-6 flex-shrink-0">
+                            <h3 className="font-serif text-3xl text-stone-900 leading-snug">{product.title}</h3>
+                            <div className="flex items-baseline mt-2">
+                                <p className="text-xl font-medium text-stone-900">
+                                    {formatPriceDisplay(currentPrice)}
+                                </p>
+                                {isOnSale && (
+                                    <p className="text-sm font-medium text-stone-500 ml-3 line-through">
+                                        {formatPriceDisplay(compareAtPrice)}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                        
+                        {/* Bloc 2: Description (Défilant) */}
+                        <div className="mb-8 flex-grow overflow-y-visible">
+                            <ProductDescriptionContent />
+                        </div>
 
-                <div className="mt-8 pt-4 border-t border-stone-200">
-                    <button 
-                        onClick={(e) => { e.stopPropagation(); onClose(); }}
-                        className="w-full bg-stone-900 text-white py-3 uppercase tracking-[0.2em] text-xs font-bold hover:bg-stone-700 transition-colors rounded-sm"
-                    >
-                        Fermer l'aperçu
-                    </button>
+                        {/* Bloc 3: Spécifications (Défilant) */}
+                        <div className="mb-8 p-4 bg-finca-medium rounded-lg flex-shrink-0">
+                            <h4 className="text-sm font-bold text-stone-900 mb-4 uppercase tracking-widest">Spécifications du produit</h4>
+                            {mockSpecifications.map((spec, index) => (
+                                <div key={index} className="flex justify-between border-b border-stone-300 py-2 last:border-b-0">
+                                    <span className="text-xs font-medium text-stone-900">{spec.label}:</span>
+                                    <span className="text-xs text-stone-500 text-right">{spec.value}</span>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Bloc 4: Bouton d'Action (Fixé en bas) */}
+                        <div className="flex-shrink-0 lg:pt-4">
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); onClose(); handleOpenVariantSelector(product); }}
+                                className="w-full bg-stone-900 text-white py-3 uppercase tracking-widest text-xs font-bold hover:bg-stone-700 transition-colors rounded-sm mt-4"
+                            >
+                                Choisir les options
+                            </button>
+                        </div>
+                    </div>
                 </div>
+
             </div>
         </div>
     );
 };
 
-
+/**
+ * Modale de sélection de variante et de quantité.
+ */
 const VariantSelector = ({ product, onClose, onConfirm }) => {
   const variants = product.variants?.edges || [];
-  // Le prix minimum est pris du produit si la variante n'a pas encore été sélectionnée
   const initialVariant = variants.length > 0 ? variants[0].node : null;
   
   const [selectedVariant, setSelectedVariant] = useState(initialVariant);
@@ -853,22 +926,31 @@ const VariantSelector = ({ product, onClose, onConfirm }) => {
   const decrement = () => setQuantity(q => (q > 1 ? q - 1 : 1));
   
   const currentPrice = selectedVariant?.price?.amount || product.priceRange?.minVariantPrice?.amount || 0;
-  const finalPrice = Math.round(parseFloat(currentPrice) * quantity);
+  // Utilisation de toFixed(2) pour le prix final
+  const finalPrice = (parseFloat(currentPrice) * quantity).toFixed(2);
+  
+  // Fonction pour afficher le prix de la variante
+  const formatVariantPrice = (price) => `${parseFloat(price).toFixed(2)} €`;
 
   if (!initialVariant) {
     return (
-        <div className="fixed inset-0 z-[80] bg-black/10 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
+        <div className="fixed inset-0 z-[80] bg-finca-medium/95 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
             <div className="bg-finca-light w-full max-w-md shadow-2xl p-8 relative rounded-lg" onClick={(e) => e.stopPropagation()}>
                 <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900"><X size={20} /></button>
-                <p className="text-center p-4">Aucune variante disponible pour ce produit.</p>
+                <p className="text-center text-stone-500 font-serif italic">Aucune variante disponible pour ce produit.</p>
             </div>
         </div>
     );
   }
 
+  const handleConfirm = () => {
+    if (selectedVariant) {
+      onConfirm(product, selectedVariant, quantity);
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-[80] bg-black/10 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
-      {/* MODALE AVEC FOND OPAQUE COULEUR DU SITE */}
+    <div className="fixed inset-0 z-[80] bg-finca-medium/95 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
       <div className="bg-finca-light w-full max-w-md shadow-2xl p-8 relative rounded-lg" onClick={(e) => e.stopPropagation()}>
         <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900"><X size={20} /></button>
         <div className="flex gap-6 mb-8">
@@ -876,13 +958,15 @@ const VariantSelector = ({ product, onClose, onConfirm }) => {
             <img 
               src={selectedVariant?.image?.url || product.images?.edges?.[0]?.node?.url || "https://placehold.co/800x1000/F0EBE5/7D7D7D?text=Image"} 
               alt={product.title} 
+              onError={(e) => {e.target.onerror = null; e.target.src="https://placehold.co/800x1000/F0EBE5/7D7D7D?text=Image"}}
               className="w-full h-full object-cover" 
             />
           </div>
           <div>
             <h3 className="font-serif text-xl text-stone-900 mb-2">{product.title}</h3>
             <p className="text-stone-500 text-xs uppercase tracking-widest mb-3">{product.productType}</p>
-            <p className="text-stone-900 font-medium text-lg">{finalPrice} €</p>
+            {/* Affichage du prix sans arrondi */}
+            <p className="text-sm font-medium text-stone-900">{finalPrice} €</p>
           </div>
         </div>
         <div className="mb-6">
@@ -895,7 +979,8 @@ const VariantSelector = ({ product, onClose, onConfirm }) => {
                 className={`w-full text-left px-4 py-3 text-sm font-serif border rounded-sm transition-all flex justify-between items-center 
                   ${selectedVariant?.id === node.id ? 'border-stone-900 bg-white shadow-sm' : 'border-stone-200 hover:border-stone-400'}`}
               >
-                <span>{node.title} - {Math.round(parseFloat(node.price.amount))} €</span>
+                {/* Affichage du prix de la variante sans arrondi */}
+                <span>{node.title} - {formatVariantPrice(node.price.amount)}</span>
                 {selectedVariant?.id === node.id && <div className="w-2 h-2 bg-stone-900 rounded-full"></div>}
               </button>
             ))}
@@ -910,7 +995,7 @@ const VariantSelector = ({ product, onClose, onConfirm }) => {
           </div>
         </div>
         <button 
-          onClick={() => onConfirm(product, selectedVariant, quantity)} 
+          onClick={handleConfirm} 
           className="w-full bg-stone-900 text-white py-4 uppercase tracking-[0.2em] text-xs font-bold hover:bg-stone-700 transition-colors rounded-sm"
         >
           Ajouter au panier - {finalPrice} €
@@ -920,31 +1005,37 @@ const VariantSelector = ({ product, onClose, onConfirm }) => {
   );
 };
 
-
+/**
+ * Vue détaillée d'un article de blog.
+ */
 const ArticleView = ({ article }) => {
   useEffect(() => {
+    // S'assurer que l'article est chargé en haut de l'écran.
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
   if (!article) return null;
   const node = article.node;
 
+  // Logique de conversion du HTML du CMS en blocs de texte simples.
   const processArticleContent = (html) => {
     let text = html
         .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
         .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
-        .replace(/\{\s*\"@context\":\s*\"https:\/\/schema\.org\"[\s\S]*?\}/g, ' ')
-        .replace(/["{}[]]/g, ' ');
+        .replace(/\{\s*\"@context\":\s*\"https:\/\/schema\.org\"[\s\S]*?\}/g, ' ');
 
+    // Convertir les balises de bloc en sauts de ligne pour structurer le texte
     text = text.replace(/(<\/?p>|<\/?h\d>|<\/?li>|<\/?div>|<br\b[^>]*\/?>)/gi, '\n\n'); 
-    text = text.replace(/<[^>]+>/g, ' ');      
+    text = text.replace(/<[^>]+>/g, ' '); // Enlève les balises restantes (e.g., span, a, b)
     
+    // Nettoyage supplémentaire basé sur la configuration
     DESIGN_CONFIG.ARTICLE_CLEANUP_FILTERS.forEach(filterText => {
       const escapedFilter = filterText.replace(/([.*+?^=!:${}()|[\]/\\])/g, '\\$1');
       const regex = new RegExp(escapedFilter, 'g');
       text = text.replace(regex, ' ').trim();
     });
     
+    // Réduire les sauts de ligne multiples et espaces superflus
     text = text.replace(/(\s*\n\s*){2,}/g, '\n\n').trim(); 
     text = text.replace(/[ \t]+/g, ' '); 
     
@@ -953,14 +1044,15 @@ const ArticleView = ({ article }) => {
       .filter(line => line.length > 0);
     
     const elements = [];
-    const numberedTitleRegex = /^(\d+\.?\s+)(.+)/i;
+    const numberedTitleRegex = /^(\d+\.?\s+)(.+)/i; // Détecte les titres numérotés ou en gras
 
     blocks.forEach((block, index) => {
       if (!block.trim().length) return; 
 
       const match = block.match(numberedTitleRegex);
       
-      if (match) {
+      // Heuristique pour déterminer si c'est un titre (numéroté ou très court)
+      if (match || block.length < 50) { 
         elements.push({
           type: 'title',
           content: block,
@@ -998,7 +1090,7 @@ const ArticleView = ({ article }) => {
   };
 
   return (
-    <div className="bg-white min-h-screen pt-32 pb-24 animate-fade-in selection:bg-finca-medium/50">
+    <div className="bg-white min-h-screen pt-32 pb-24 selection:bg-finca-medium/50">
       
       <div className="max-w-[1400px] mx-auto px-6 mb-20">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
@@ -1008,6 +1100,7 @@ const ArticleView = ({ article }) => {
               <img 
                 src={node.image.url} 
                 alt={node.title} 
+                onError={(e) => {e.target.onerror = null; e.target.src="https://placehold.co/1000x750/F0EBE5/7D7D7D?text=Image+Article"}}
                 className="w-full h-full object-cover opacity-95" 
               />
             </div>
@@ -1059,7 +1152,9 @@ const ArticleView = ({ article }) => {
   );
 };
 
-
+/**
+ * Section Meubles sur Mesure avec effet de rideau basé sur le scroll.
+ */
 const CustomFurnitureSection = () => {
     const sectionRef = useRef(null);
     const [scrollProgress, setScrollProgress] = useState(0); 
@@ -1074,15 +1169,20 @@ const CustomFurnitureSection = () => {
                 const viewportHeight = window.innerHeight;
                 const scrollY = window.scrollY;
 
-                // L'animation commence quand le haut de la section arrive en bas de l'écran.
                 const startPoint = sectionTop - viewportHeight;
-                // L'animation se termine quand le bas de la section dépasse le haut de l'écran.
                 const endPoint = sectionTop + sectionHeight; 
                 
-                let progress = (scrollY - startPoint) / (endPoint - startPoint);
+                const range = endPoint - startPoint;
+                let progress;
+                
+                if (range > 0) {
+                    progress = (scrollY - startPoint) / range;
+                } else {
+                    progress = 0;
+                }
+                
                 progress = Math.max(0, Math.min(1, progress));
                 
-                // Mise à jour de la progression pour piloter l'animation
                 setScrollProgress(progress);
             }
         };
@@ -1092,44 +1192,41 @@ const CustomFurnitureSection = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // 1. Déplacement des rideaux (ouverture complète sur les 50% de la progression)
+    // Cinématique: 
+    // 1. Ouverture des rideaux (0.0 à 0.5)
     const openProgress = Math.min(1, scrollProgress * 2); 
     const leftCurtainTransform = `translateX(-${openProgress * 100}%)`;
     const rightCurtainTransform = `translateX(${openProgress * 100}%)`;
-
-    // 2. Le texte apparaît plus tôt et plus longtemps: commence à 30% du scroll, finit à 80% (au lieu de 50%-100%)
-    // (progress - 0.3) / 0.5 -> Normalise l'animation entre 0.3 et 0.8
+    
+    // 2. Révélation du texte (0.3 à 0.8)
     const textRevealProgress = Math.max(0, Math.min(1, (scrollProgress - 0.3) / 0.5)); 
     const textOpacity = textRevealProgress;
     const textY = 1 - textRevealProgress; 
 
     return (
-        // min-h-[120vh] force le défilement et crée la sensation de "frein"
         <section 
             id="custom-furniture" 
-            className="relative w-full min-h-[120vh] overflow-hidden" // Couleur de fond héritée de finca-light du conteneur parent
-            ref={sectionRef} // Le ref est sur la section pour mesurer sa position
+            className="relative w-full min-h-[120vh] overflow-hidden bg-finca-light" 
+            ref={sectionRef} 
         >
             <div className="absolute inset-0 z-0">
-                {/* Image de fond statique, DÉSORMAIS EN OPACITÉ 100% */}
+                {/* Image de fond */}
                 <img
                     src={SITE_CONFIG.CUSTOM_FURNITURE.IMAGE_URL}
                     alt="Meubles sur mesure"
+                    onError={(e) => {e.target.onerror = null; e.target.src="https://placehold.co/1920x1080/F0EBE5/7D7D7D?text=Meubles+Sur+Mesure"}}
                     className="w-full h-full object-cover absolute inset-0 z-10 opacity-100 scale-[1.05]"
                 />
-                
-                {/* Voile sombre - RETIRÉ */}
             </div>
 
             {/* Contenu superposé (texte révélé) */}
             <div className="absolute inset-0 z-30 flex items-center justify-center p-8">
                 <div className="text-center" 
-                     style={{ 
-                         opacity: textOpacity, 
-                         transform: `translateY(${textY * 20}px)`, 
-                         // Retirer les transitions CSS pour permettre un contrôle total par le scroll/JS
-                         transition: 'none' 
-                     }}>
+                    style={{ 
+                        opacity: textOpacity, 
+                        transform: `translateY(${textY * 20}px)`, 
+                        transition: 'none' 
+                    }}>
                     <h2 className={`text-4xl md:text-6xl font-serif text-white uppercase tracking-wider drop-shadow-lg`}>
                         {SITE_CONFIG.CUSTOM_FURNITURE.TEXT}
                     </h2>
@@ -1139,15 +1236,15 @@ const CustomFurnitureSection = () => {
                 </div>
             </div>
 
-            {/* Masques (Rideaux) - Ils sont absolus pour couvrir le contenu, et leur transformation est pilotée par scrollProgress */}
+            {/* Masques (Rideaux) - Transition pilotée par l'état React */}
             <div className="absolute inset-0 z-40 pointer-events-none">
-                {/* Panneau Gauche (Couleur du fond: COLOR_LIGHT) */}
+                {/* Panneau Gauche */}
                 <div 
                     className={`absolute top-0 left-0 h-full w-1/2 transition-none`} 
                     style={{ backgroundColor: localColorLight, transform: leftCurtainTransform, transition: 'none' }}
                 />
                 
-                {/* Panneau Droit (Couleur du fond: COLOR_LIGHT) */}
+                {/* Panneau Droit */}
                 <div 
                     className={`absolute top-0 right-0 h-full w-1/2 transition-none`} 
                     style={{ backgroundColor: localColorLight, transform: rightCurtainTransform, transition: 'none' }}
@@ -1157,9 +1254,10 @@ const CustomFurnitureSection = () => {
     );
 };
 
-
+/**
+ * Section Valeurs et Philosophie.
+ */
 const ValuesSection = () => (
-    // Remplacement de py-24 par py-16
     <section id="values" className="py-20 bg-finca-light">
         <div className="max-w-[1400px] mx-auto px-6 md:px-12">
             <ScrollFadeIn threshold={0.2}>
@@ -1169,13 +1267,12 @@ const ValuesSection = () => (
             </ScrollFadeIn>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-5xl mx-auto">
                 {SITE_CONFIG.MATERIALS.map((item, index) => (
-                    // La fluidité est assurée par la petite translation dans ScrollFadeIn
                     <ScrollFadeIn key={index} delay={index * 150} threshold={0.5} className="text-center">
-                        <div className="text-stone-900 text-4xl mb-4">
-                            {/* Icons are purely illustrative here, could be replaced by custom SVGs */}
-                            {index === 0 && <span className="font-serif">01</span>}
-                            {index === 1 && <span className="font-serif">02</span>}
-                            {index === 2 && <span className="font-serif">03</span>}
+                        <div className="text-stone-900 text-4xl mb-4 font-serif italic font-extralight">
+                            {/* Utilisation de numéros pour un style minimaliste */}
+                            {index === 0 && <span>01</span>}
+                            {index === 1 && <span>02</span>}
+                            {index === 2 && <span>03</span>}
                         </div>
                         <h3 className="font-serif text-2xl text-stone-900 mb-4">{item.TITLE}</h3>
                         <p className="text-stone-500 font-light leading-relaxed">{item.TEXT}</p>
@@ -1186,9 +1283,10 @@ const ValuesSection = () => (
     </section>
 );
 
-
+/**
+ * Section Coaching et services d'expertise.
+ */
 const CoachingSection = () => (
-    // Remplacement de py-24 md:py-32 par py-20 md:py-24
     <section id="coaching" className="py-20 md:py-24 bg-finca-medium">
         <div className="max-w-[1400px] mx-auto px-6 md:px-12">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
@@ -1199,6 +1297,7 @@ const CoachingSection = () => (
                     <img 
                         src={SITE_CONFIG.COACHING.IMAGE_URL} 
                         alt="Coaching en décoration" 
+                        onError={(e) => {e.target.onerror = null; e.target.src="https://placehold.co/800x1000/F0EBE5/7D7D7D?text=Coaching+Design"}}
                         className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-stone-900/10"></div>
@@ -1242,7 +1341,9 @@ const CoachingSection = () => (
     </section>
 );
 
-
+/**
+ * Pied de page du site.
+ */
 const Footer = ({ logo }) => (
     <footer className="bg-stone-900 text-finca-light py-16 md:py-24">
         <div className="max-w-[1400px] mx-auto px-6 md:px-12">
@@ -1258,9 +1359,9 @@ const Footer = ({ logo }) => (
                 <div>
                     <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-stone-300 mb-6">Navigation</h4>
                     <ul className="space-y-3 text-sm">
-                        <li><a href="#collections" className="text-stone-400 hover:text-white transition-colors">Boutique</a></li>
-                        <li><a href="#coaching" className="text-stone-400 hover:text-white transition-colors">Coaching</a></li>
-                        <li><a href="#journal-section" className="text-stone-400 hover:text-white transition-colors">Le Journal</a></li>
+                        <li><a href="#collections" className="text-stone-400 hover:text-white transition-colors" onClick={(e) => { e.preventDefault(); document.getElementById('collections')?.scrollIntoView({ behavior: 'smooth' }); }}>Boutique</a></li>
+                        <li><a href="#coaching" className="text-stone-400 hover:text-white transition-colors" onClick={(e) => { e.preventDefault(); document.getElementById('coaching')?.scrollIntoView({ behavior: 'smooth' }); }}>Coaching</a></li>
+                        <li><a href="#journal-section" className="text-stone-400 hover:text-white transition-colors" onClick={(e) => { e.preventDefault(); document.getElementById('journal-section')?.scrollIntoView({ behavior: 'smooth' }); }}>Le Journal</a></li>
                     </ul>
                 </div>
 
@@ -1278,15 +1379,14 @@ const Footer = ({ logo }) => (
                 <div>
                     <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-stone-300 mb-6">Suivez-nous</h4>
                     <div className="flex items-center gap-4">
-                        <a href={SITE_CONFIG.SOCIAL_LINKS.INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" className="text-stone-400 hover:text-white transition-colors">
+                        <a href={SITE_CONFIG.SOCIAL_LINKS.INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" className="text-stone-400 hover:text-white transition-colors" aria-label="Instagram">
                             <Instagram size={20} />
                         </a>
-                        <a href={SITE_CONFIG.SOCIAL_LINKS.FACEBOOK_URL} target="_blank" rel="noopener noreferrer" className="text-stone-400 hover:text-white transition-colors">
+                        <a href={SITE_CONFIG.SOCIAL_LINKS.FACEBOOK_URL} target="_blank" rel="noopener noreferrer" className="text-stone-400 hover:text-white transition-colors" aria-label="Facebook">
                             <Facebook size={20} />
                         </a>
-                        <a href={SITE_CONFIG.SOCIAL_LINKS.TIKTOK_URL} target="_blank" rel="noopener noreferrer" className="text-stone-400 hover:text-white transition-colors">
-                             {/* Placeholder Icon for TikTok if needed, or use a custom SVG/text */}
-                             <MessageSquare size={20} /> 
+                        <a href={SITE_CONFIG.SOCIAL_LINKS.TIKTOK_URL} target="_blank" rel="noopener noreferrer" className="text-stone-400 hover:text-white transition-colors" aria-label="TikTok">
+                            <MessageSquare size={20} /> 
                         </a>
                     </div>
                     <p className="text-stone-500 text-xs mt-4">{SITE_CONFIG.SOCIAL_LINKS.INSTAGRAM_HANDLE}</p>
@@ -1310,32 +1410,55 @@ const App = () => {
   const [loading, setLoading] = useState(true);
   const [cartItems, setCartItems] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null); 
-  const [selectedDescriptionProduct, setSelectedDescriptionProduct] = useState(null); // Nouvel état pour la modale de description
+  const [selectedProduct, setSelectedProduct] = useState(null); // Modale de sélection de variante
+  const [selectedDescriptionProduct, setSelectedDescriptionProduct] = useState(null); // Modale de description détaillée
   const [selectedArticle, setSelectedArticle] = useState(null); 
   const [isArticleView, setIsArticleView] = useState(false);
+  const [selectedCollectionId, setSelectedCollectionId] = useState(null); // Filtre de la section produits
   
   const logoText = data?.shop?.name || "LA MAISON";
   const collections = data?.collections?.edges || [];
   const blog = data?.blogs?.edges?.[0]?.node;
   const articles = blog?.articles?.edges || [];
   
-  // --- NOUVEAU LOGIQUE DE FILTRAGE DES COLLECTIONS ---
-  const newArrivalsCollection = collections.find(
+  // Utilisation des valeurs de DESIGN_CONFIG
+  const { COLLECTION_ITEM_WIDTH, PRODUCT_ITEM_WIDTH, JOURNAL_ITEM_WIDTH, NOUVEAUTES_ITEM_WIDTH } = DESIGN_CONFIG;
+
+  
+  // Identification des collections spéciales et produits associés
+  const newArrivalsCollection = useMemo(() => collections.find(
     c => c.node.title.toLowerCase() === 'nouveautés' || c.node.handle === 'nouveautes'
-  );
+  ), [collections]);
 
-  const regularCollections = collections.filter(
+  const regularCollections = useMemo(() => collections.filter(
     c => c.node.title.toLowerCase() !== 'nouveautés' && c.node.handle !== 'nouveautes'
-  );
+  ), [collections]);
   
-  const allProducts = regularCollections.flatMap(c => c.node.products.edges).map(e => e.node);
+  const allProducts = useMemo(() => regularCollections.flatMap(c => c.node.products.edges).map(e => e.node), [regularCollections]);
   
-  const nouveautesProducts = newArrivalsCollection
+  const nouveautesProducts = useMemo(() => newArrivalsCollection
     ? newArrivalsCollection.node.products.edges.map(e => e.node)
-    : allProducts.slice(0, 10); // Fallback: premiers produits si la collection Nouveautés n'est pas trouvée
-  // --------------------------------------------------
+    : allProducts.slice(0, 10) // Fallback
+  , [newArrivalsCollection, allProducts]);
+  
+  // LOGIQUE DE FILTRAGE PRINCIPALE DES PRODUITS POUR LA SECTION "LA BOUTIQUE"
+  const filteredProducts = useMemo(() => {
+    if (!selectedCollectionId || selectedCollectionId === 'all') {
+        return allProducts;
+    }
+    
+    const targetCollection = collections.find(c => c.node.id === selectedCollectionId);
 
+    if (targetCollection) {
+      if (targetCollection.node.id === newArrivalsCollection?.node?.id) {
+        return nouveautesProducts;
+      }
+      
+      return targetCollection.node.products.edges.map(e => e.node);
+    }
+    
+    return allProducts; 
+  }, [selectedCollectionId, allProducts, collections, newArrivalsCollection, nouveautesProducts]);
 
   // --- LOGIQUE DE TÉLÉCHARGEMENT DE DONNÉES ---
   useEffect(() => {
@@ -1350,25 +1473,33 @@ const App = () => {
   
   // --- LOGIQUE DU PANIER ET DES MODALES ---
   
-  // Ouvre le sélecteur de variantes (Utilisé par le bouton Ajouter au Panier flottant)
   const handleOpenVariantSelector = useCallback((product) => {
     setSelectedProduct(product);
     setSelectedDescriptionProduct(null);
   }, []);
 
-  // Ouvre la modale de description (Utilisé par l'icône Œil)
   const handleOpenDescriptionModal = useCallback((product) => {
     setSelectedDescriptionProduct(product);
     setSelectedProduct(null);
   }, []);
 
-  // Ferme la modale de description
   const handleCloseDescriptionModal = useCallback(() => {
     setSelectedDescriptionProduct(null);
   }, []);
 
+  const handleCollectionFilter = useCallback((collectionId) => {
+    setSelectedCollectionId(collectionId);
+    
+    // Défilement vers la section des produits filtrés
+    const productsSection = document.getElementById('products');
+    if (productsSection) {
+      window.scrollTo({
+        top: productsSection.offsetTop - 100,
+        behavior: 'smooth'
+      });
+    }
+  }, []);
 
-  // Ajout effectif au panier (depuis VariantSelector)
   const handleAddToCart = useCallback((product, variant, quantity) => {
     const variantId = variant.id;
     const existingItemIndex = cartItems.findIndex(item => item.variantId === variantId);
@@ -1394,11 +1525,10 @@ const App = () => {
       setCartItems(prevItems => [...prevItems, newItem]);
     }
     
-    setSelectedProduct(null); // Fermer le modal
-    setIsCartOpen(true); // Ouvrir la sidebar du panier
+    setSelectedProduct(null); 
+    setIsCartOpen(true); 
   }, [cartItems]);
 
-  // Mettre à jour la quantité (depuis CartSidebar)
   const handleUpdateQuantity = useCallback((variantId, quantity) => {
     if (quantity < 1) return;
     setCartItems(prevItems => 
@@ -1410,33 +1540,29 @@ const App = () => {
     );
   }, []);
 
-  // Retirer un article (depuis CartSidebar)
   const handleRemoveFromCart = useCallback((variantId) => {
     setCartItems(prevItems => prevItems.filter(item => item.variantId !== variantId));
   }, []);
 
   // --- LOGIQUE DE VUE/NAVIGATION ---
   
-  // Gestion du clic sur un article de blog
   const handleArticleClick = useCallback((article) => {
     setSelectedArticle(article);
     setIsArticleView(true);
-    // Le défilement est géré par ArticleView useEffect
   }, []);
   
-  // Retour à la page principale
   const handleBackToMain = useCallback(() => {
     setIsArticleView(false);
     setSelectedArticle(null);
+    setSelectedCollectionId(null); 
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
   
-  // Défilement de la section Héro
   const handleHeroScroll = () => {
     const collectionsSection = document.getElementById('nouveautes');
     if (collectionsSection) {
       window.scrollTo({
-        top: collectionsSection.offsetTop - 100, // Défiler juste au-dessus de la section
+        top: collectionsSection.offsetTop - 100, 
         behavior: 'smooth'
       });
     }
@@ -1452,6 +1578,10 @@ const App = () => {
     );
   }
 
+  const currentCollectionTitle = selectedCollectionId
+    ? collections.find(c => c.node.id === selectedCollectionId)?.node?.title || "Sélection Filtrée"
+    : "Nos Incontournables";
+
   return (
     <div className="relative min-h-screen bg-finca-light font-sans text-stone-900">
       
@@ -1464,15 +1594,16 @@ const App = () => {
         onBack={handleBackToMain}
       />
       
-      {/* Modale de Description (Nouvelle modale) */}
+      {/* Modale de Description */}
       {selectedDescriptionProduct && (
           <ProductDescriptionModal 
               product={selectedDescriptionProduct} 
               onClose={handleCloseDescriptionModal}
+              handleOpenVariantSelector={handleOpenVariantSelector}
           />
       )}
 
-      {/* Sélecteur de Variante (Modale) */}
+      {/* Sélecteur de Variante */}
       {selectedProduct && (
         <VariantSelector 
           product={selectedProduct} 
@@ -1490,8 +1621,8 @@ const App = () => {
         onRemove={handleRemoveFromCart}
         onCheckout={() => proceedToCheckout(cartItems)}
       />
-      {/* Overlay: Opacité très faible pour ne pas masquer le contenu */}
-      {isCartOpen && <div className="fixed inset-0 bg-black/10 z-40 transition-opacity" onClick={() => setIsCartOpen(false)} />}
+      {/* Overlay de fond pour les modales/sidebar */}
+      {(isCartOpen || selectedProduct || selectedDescriptionProduct) && <div className="fixed inset-0 bg-finca-medium/95 backdrop-blur-sm z-40 transition-opacity" onClick={() => { setIsCartOpen(false); setSelectedProduct(null); setSelectedDescriptionProduct(null); }} />}
       
       
       {/* Rendu Conditionnel des Vues */}
@@ -1508,77 +1639,103 @@ const App = () => {
           {/* Section 1: Héro (Vidéo) */}
           <HeroSection onScroll={handleHeroScroll} />
           
-          {/* NOUVEAU BLOC : Nouveautés (après le Héro) */}
+          {/* Section 2: Nouveautés (Carrousel) */}
           <Carousel
             title={SITE_CONFIG.SECTIONS.NOUVEAUTES_TITLE}
             subtitle={SITE_CONFIG.SECTIONS.NOUVEAUTES_SUBTITLE}
             anchorId="nouveautes"
-            itemWidth={DESIGN_CONFIG.NOUVEAUTES_ITEM_WIDTH}
+            itemWidth={NOUVEAUTES_ITEM_WIDTH}
           >
-            {/* Utilise uniquement les produits de la collection Nouveautés (ou fallback) */}
             {nouveautesProducts.slice(0, 10).map((product, index) => (
               <NouveautesProductCard 
                 key={product.id + index} 
                 product={product} 
-                onClick={handleOpenDescriptionModal} // L'action principale au clic/touch sur mobile ouvre la description
-                onAddToCart={handleOpenVariantSelector} // Ouvre le sélecteur de variantes (Bouton Add to Cart)
-                onShowDescription={handleOpenDescriptionModal} // Ouvre la description (Icône œil)
+                onClick={handleOpenDescriptionModal} 
+                onAddToCart={handleOpenVariantSelector} 
+                onShowDescription={handleOpenDescriptionModal} 
               />
             ))}
           </Carousel>
           
-          {/* Section 2: Carousel des Collections (Exclut la collection Nouveautés) */}
+          {/* Section 3: Carousel des Collections (Nos Univers) */}
           <Carousel
             title={SITE_CONFIG.SECTIONS.UNIVERS}
             subtitle="Collections Exclusives"
             anchorId="collections"
-            itemWidth={DESIGN_CONFIG.COLLECTION_ITEM_WIDTH}
+            itemWidth={COLLECTION_ITEM_WIDTH}
           >
-            {/* PASSAGE DU HANDLER handleSelectProduct */}
             {regularCollections.map(({ node }) => (
               <CollectionCard 
                 key={node.id} 
                 collection={node} 
-                onClickProduct={handleOpenDescriptionModal} // Simuler l'aperçu rapide avec la description
-                onQuickAddToCart={handleOpenVariantSelector} // Ouvre le sélecteur de variantes
+                onFilterCollection={handleCollectionFilter}
               />
             ))}
           </Carousel>
           
-          {/* Section 3: Carousel des Meilleurs Produits (Utilise les produits des collections régulières) */}
-          <Carousel
-            title={SITE_CONFIG.SECTIONS.BOUTIQUE}
-            subtitle="Nos Incontournables"
-            anchorId="products"
-            itemWidth={DESIGN_CONFIG.PRODUCT_ITEM_WIDTH}
-          >
-            {regularCollections.flatMap(c => c.node.products.edges).map(e => e.node).slice(0, 8).map(product => (
-              <ProductCard 
-                key={product.id} 
-                product={product} 
-                onClick={handleOpenDescriptionModal} // Ouvre la description (L'action principale du clic/touch)
-                onAddToCart={handleOpenVariantSelector} // Ouvre le sélecteur de variantes (Bouton Add to Cart)
-                onShowDescription={handleOpenDescriptionModal} // Ouvre la description (Icône œil)
-              />
-            ))}
-          </Carousel>
+          {/* Section 4: Carousel des Produits (La Boutique) - Affiche tous ou les produits filtrés */}
+          <div className="flex flex-col items-center justify-center min-h-[50vh] w-full bg-finca-light">
+            <section id="products" className="w-full py-16">
+                <div className="max-w-[1800px] mx-auto px-6 md:px-12">
+                    <ScrollFadeIn threshold={0.1}>
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 md:mb-16">
+                            <div>
+                                <span className="text-[10px] font-serif tracking-[0.3em] text-stone-400 uppercase mb-3 block">
+                                    La Boutique
+                                </span>
+                                <h2 className="text-3xl md:text-4xl font-serif text-stone-900 italic font-light">
+                                    {currentCollectionTitle}
+                                    {selectedCollectionId && (
+                                        <button 
+                                            onClick={() => setSelectedCollectionId(null)}
+                                            className="ml-4 text-xs font-sans text-stone-500 hover:text-stone-900 uppercase tracking-widest underline"
+                                        >
+                                            [Effacer le filtre]
+                                        </button>
+                                    )}
+                                </h2>
+                            </div>
+                        </div>
+                    </ScrollFadeIn>
+
+                    {filteredProducts.length > 0 ? (
+                        <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 md:gap-8`}>
+                            {filteredProducts.map((product, index) => (
+                                <ScrollFadeIn key={product.id + index} delay={index * 50} threshold={0.1}>
+                                    <ProductCard 
+                                        product={product} 
+                                        onClick={handleOpenDescriptionModal}
+                                        onAddToCart={handleOpenVariantSelector}
+                                        onShowDescription={handleOpenDescriptionModal}
+                                    />
+                                </ScrollFadeIn>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-12 text-stone-500 font-serif italic border border-stone-200 p-8 rounded-lg">
+                            Aucun produit trouvé dans cette collection.
+                        </div>
+                    )}
+                </div>
+            </section>
+          </div>
           
-          {/* Section 4: Valeurs / Matériaux (Notre Philosophie) */}
+          {/* Section 5: Valeurs / Matériaux (Notre Philosophie) */}
           <ValuesSection />
           
-          {/* Section 5: Section sur Mesure (Bannière fluide avec rideau piloté par scroll) */}
+          {/* Section 6: Section sur Mesure (Bannière fluide avec rideau piloté par scroll) */}
           <CustomFurnitureSection />
           
-          {/* Section 6: Coaching / Conseils Déco (Notre Expertise) */}
+          {/* Section 7: Coaching / Conseils Déco (Notre Expertise) */}
           <CoachingSection />
           
-          {/* Section 7: Le Journal (Articles de Blog) */}
+          {/* Section 8: Le Journal (Articles de Blog) */}
           {articles.length > 0 && (
             <Carousel
               title={SITE_CONFIG.SECTIONS.JOURNAL_TITLE}
               subtitle={SITE_CONFIG.SECTIONS.JOURNAL_SUBTITLE}
               anchorId="journal-section"
-              itemWidth={DESIGN_CONFIG.JOURNAL_ITEM_WIDTH}
+              itemWidth={JOURNAL_ITEM_WIDTH}
             >
               {articles.map((article) => (
                 <ArticleCard 
