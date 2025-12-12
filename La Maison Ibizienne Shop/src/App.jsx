@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { ShoppingBag, X, Instagram, Facebook, Loader, ChevronRight, Menu, ArrowLeft, Heart, ChevronDown, Minus, Plus, ChevronLeft, Send, MessageSquare } from 'lucide-react';
+import { ShoppingBag, X, Instagram, Facebook, Loader, ChevronRight, Menu, ArrowLeft, Heart, ChevronDown, Minus, Plus, ChevronLeft, Send, MessageSquare, Eye } from 'lucide-react';
 
 // ==============================================================================
 // 1. CONFIGURATION TECHNIQUE & STYLE
@@ -153,7 +153,7 @@ const DESIGN_CONFIG = {
     "Mieux vaut laisser vivre l'intérieur avant de le remplir\\.",
     "Pour vous aider à naviguer dans ce marché, nous avons condensé les 5 tendances majeures et les 5 erreurs à éviter absolument\\.",
     "Ce que nous proposons",
-    "Chez La Maison Ibizienne, nous ne vous aidons pas simplement à acheter ou vendre\\.",
+    "Chez La Maison Ibizienne, nous ne vous aidez pas simplement à acheter ou vendre\\.",
     "Nous révélons le potentiel de votre bien\\.",
     "Et nous créons un environnement qui parle à vos futurs acquéreurs dès la première visite\\.",
     "Un excès d'éclectisme peut nuire à la cohérence visuelle\\. Il est important de choisir une ligne directrice pour créer une harmonie fluide et agréable\\.",
@@ -276,7 +276,7 @@ async function fetchShopifyData() {
               node {
                 id title handle description productType tags
                 priceRange { minVariantPrice { amount currencyCode } }
-                images(first: 2) { edges { node { url } } }
+                images(first: 5) { edges { node { url } } }
                 variants(first: 20) { 
                   edges { 
                     node { 
@@ -287,6 +287,8 @@ async function fetchShopifyData() {
                     } 
                   } 
                 }
+                # Pour la description, nous avons besoin de contentHtml
+                descriptionHtml
               }
             }
           }
@@ -348,7 +350,9 @@ const FALLBACK_DATA = {
 // 6. COMPOSANTS DESIGN
 // ==============================================================================
 
-const CollectionCard = ({ collection, onClickProduct }) => {
+const CollectionCard = ({ collection, onClickProduct, onQuickAddToCart }) => {
+  // CollectionCard est principalement pour naviguer dans une catégorie,
+  // nous affichons l'image de la collection, ou la première du premier produit.
   const product = collection.products?.edges?.[0]?.node;
   const image = collection.image?.url || product?.images?.edges?.[0]?.node?.url;
 
@@ -367,40 +371,153 @@ const CollectionCard = ({ collection, onClickProduct }) => {
         <p className="text-stone-500 text-xs uppercase tracking-widest font-sans">
           {collection.products?.edges?.length || 0} Produits
         </p>
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            if (product) onClickProduct(product);
-          }}
-          className="mt-4 flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold text-stone-900 hover:text-stone-500 transition-colors group"
-        >
-          Acheter un Produit <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-        </button>
+        {/* Bouton pour ajouter le premier produit de la collection (si disponible) */}
+        {product && (
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              onQuickAddToCart(product);
+            }}
+            className="mt-4 flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold text-stone-900 hover:text-stone-500 transition-colors group"
+          >
+            Ajouter au panier <ShoppingBag size={14} className="group-hover:translate-x-1 transition-transform" />
+          </button>
+        )}
       </div>
     </div>
   );
 };
 
-const ProductCard = ({ product, onClick }) => {
-  const image = product.images?.edges?.[0]?.node?.url;
+// Composant pour l'affichage des produits avec carrousel sur interaction (touch/hover)
+const HoverImageCarouselCard = ({ product, onClick, onAddToCart, onShowDescription, aspectClass }) => {
+  const images = product.images?.edges?.map(e => e.node.url) || [];
+  const [imageIndex, setImageIndex] = useState(0); 
+  const [isHovered, setIsHovered] = useState(false);
+  const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+
+  // Gère l'état de survol pour l'apparition des boutons (uniquement sur desktop)
+  const handleMouseEnter = () => !isTouchDevice && setIsHovered(true);
+  const handleMouseLeave = () => !isTouchDevice && setIsHovered(false);
+
+  // LOGIQUE DE NAVIGATION POUR MOBILE/TACTILE
+  const goNext = (e) => {
+    e.stopPropagation();
+    setImageIndex((prevIndex) => (prevIndex + 1) % images.length);
+  };
+
+  const goPrev = (e) => {
+    e.stopPropagation();
+    setImageIndex((prevIndex) => (prevIndex - 1 + images.length) % images.length);
+  };
+  
+  // LOGIQUE DE NAVIGATION POUR DESKTOP (basée sur la position de la souris)
+  const handleMouseMove = (e) => {
+    if (!isTouchDevice && images.length > 1) {
+      const card = e.currentTarget;
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const normalizedX = x / rect.width;
+      
+      const segmentWidth = 1 / images.length;
+      const newIndex = Math.floor(normalizedX / segmentWidth);
+      
+      if (newIndex !== imageIndex) {
+        setImageIndex(newIndex);
+      }
+    }
+  };
+
+  const currentImage = images[imageIndex] || "https://placehold.co/800x1000/F0EBE5/7D7D7D?text=Produit";
   const price = product.priceRange?.minVariantPrice?.amount || '0';
   const currency = product.priceRange?.minVariantPrice?.currencyCode || 'EUR';
   
+  // Déterminer si le bouton flottant "Add to Cart" doit être visible
+  const showFloatingButtons = isHovered || isTouchDevice;
+
   return (
     <div 
-      onClick={() => onClick(product)} 
-      className="group cursor-pointer hover:shadow-xl transition-shadow duration-300 rounded-lg overflow-hidden bg-finca-light"
+      // Sur mobile, le clic ouvre la description (la logique de l'Œil)
+      onClick={(e) => { 
+        if (isTouchDevice) {
+            e.preventDefault(); 
+            onShowDescription(product);
+        }
+      }} 
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onMouseMove={handleMouseMove}
+      onTouchStart={() => setIsHovered(true)} // Déclenche l'affichage des flèches sur touch
+      className="group cursor-pointer transition-shadow duration-300 rounded-lg overflow-hidden bg-finca-light relative"
     >
-      <div className="relative aspect-[3/4] overflow-hidden bg-stone-100">
+      <div className={`relative ${aspectClass} overflow-hidden bg-stone-100`}>
         <img 
-          src={image || "https://placehold.co/800x1000/F0EBE5/7D7D7D?text=Produit"} 
+          src={currentImage} 
           alt={product.title} 
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          key={currentImage} 
+          className="w-full h-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
         />
-        <div className="absolute top-3 right-3 p-2 bg-white/70 backdrop-blur-sm rounded-full text-stone-900 hover:bg-white transition-colors">
-          <Heart size={16} strokeWidth={1.5} />
+        
+        {/* --- ÉLÉMENTS FLOTTANTS DE CONVERSION (Style Zoco Home) --- */}
+
+        {/* Bouton Quick View / Eye icon (en haut à droite, Ouvre la description) */}
+        <button 
+          onClick={(e) => { e.stopPropagation(); onShowDescription(product); }}
+          className={`absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full text-stone-900 transition-opacity duration-300 z-30 
+                      ${showFloatingButtons ? 'opacity-100' : 'opacity-0'}`}
+          aria-label="Voir la description"
+        >
+          <Eye size={16} strokeWidth={1.5} />
+        </button>
+
+        {/* Bouton "Ajouter au Panier" (Flottant en bas, Ouvre le sélecteur de variantes/quantité) */}
+        <div 
+            className={`absolute inset-x-0 bottom-0 z-30 transition-transform duration-300 
+                        ${showFloatingButtons ? 'translate-y-0' : 'translate-y-full'}`}
+        >
+            <button 
+                onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
+                // Fond noir opaque comme chez Zoco Home
+                className="w-full bg-stone-900 text-white py-3 uppercase tracking-widest text-[11px] font-bold hover:bg-stone-700 transition-colors"
+                aria-label="Ajouter au panier (choix des options)"
+            >
+                Ajouter au panier
+            </button>
         </div>
+        
+        {/* Navigation Mobile/Tactile (Visible si images > 1 ET appareil tactile touché) */}
+        {isTouchDevice && images.length > 1 && isHovered && (
+            <>
+                <button 
+                    onClick={goPrev} 
+                    className="absolute left-2 top-1/2 transform -translate-y-1/2 p-2 bg-black/30 text-white rounded-full transition-opacity hover:bg-black/50 z-30"
+                >
+                    <ChevronLeft size={16} />
+                </button>
+                <button 
+                    onClick={goNext} 
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-black/30 text-white rounded-full transition-opacity hover:bg-black/50 z-30"
+                >
+                    <ChevronRight size={16} />
+                </button>
+            </>
+        )}
+
+        {/* Indicateurs de progression (petits points) */}
+        {images.length > 1 && (
+          <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 flex space-x-1 p-1 bg-black/10 rounded-full z-30">
+            {images.map((_, index) => (
+              <div
+                key={index}
+                className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                  index === imageIndex ? 'bg-white scale-125' : 'bg-white/50'
+                }`}
+              />
+            ))}
+          </div>
+        )}
       </div>
+      
+      {/* Informations Produit */}
       <div className="p-4 pt-6 text-center">
         <h3 className="text-base font-serif text-stone-900 mb-1">{product.title}</h3>
         <p className="text-stone-500 text-[11px] uppercase tracking-widest font-sans mb-2">{product.productType}</p>
@@ -410,30 +527,17 @@ const ProductCard = ({ product, onClick }) => {
   );
 };
 
-// NOUVEAU COMPOSANT : VIGNETTE CARRÉE POUR LES NOUVEAUTÉS
-const NouveautesProductCard = ({ product, onClick }) => {
-  const image = product.images?.edges?.[0]?.node?.url;
-  const price = product.priceRange?.minVariantPrice?.amount || '0';
-  
-  return (
-    <div 
-      onClick={() => onClick(product)} 
-      className="group cursor-pointer rounded-lg overflow-hidden bg-finca-medium hover:shadow-lg transition-shadow duration-300 transform hover:-translate-y-1"
-    >
-      <div className="relative aspect-[1/1] overflow-hidden bg-stone-100">
-        <img 
-          src={image || "https://placehold.co/400x400/F0EBE5/7D7D7D?text=New"} 
-          alt={product.title} 
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-        />
-      </div>
-      <div className="p-3 text-center">
-        <h3 className="text-sm font-serif text-stone-900 line-clamp-1">{product.title}</h3>
-        <p className="text-xs font-medium text-stone-500 mt-1">{Math.round(parseFloat(price))} €</p>
-      </div>
-    </div>
-  );
-};
+
+// Application de la nouvelle carte aux produits réguliers (3/4 aspect)
+const ProductCard = (props) => (
+  <HoverImageCarouselCard {...props} aspectClass="aspect-[3/4]" />
+);
+
+// Application de la nouvelle carte aux nouveautés (1/1 aspect)
+const NouveautesProductCard = (props) => (
+  <HoverImageCarouselCard {...props} aspectClass="aspect-[1/1]" />
+);
+
 
 const ArticleCard = ({ article, onClick }) => {
   const image = article.node.image?.url;
@@ -549,7 +653,8 @@ const CartSidebar = ({ cartItems, isCartOpen, onClose, onUpdateQuantity, onRemov
 
   return (
     <div 
-      className={`fixed top-0 right-0 h-full w-full max-w-sm bg-finca-light shadow-2xl z-50 transition-transform duration-500 ease-in-out border-l border-stone-200 ${isCartOpen ? 'translate-x-0' : 'translate-x-full'}`}
+      // FOND OPAQUE BLANC PUR pour maximiser la lisibilité
+      className={`fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 transition-transform duration-500 ease-in-out border-l border-stone-200 ${isCartOpen ? 'translate-x-0' : 'translate-x-full'}`}
     >
       <div className="flex justify-between items-center p-6 border-b border-stone-200">
         <h2 className="font-serif text-2xl text-stone-900">Panier ({cartItems.length})</h2>
@@ -688,6 +793,55 @@ const HeroSection = ({ onScroll }) => (
   </div>
 );
 
+// NOUVEAU COMPOSANT : Modale pour afficher la description longue du produit
+const ProductDescriptionModal = ({ product, onClose }) => {
+    if (!product) return null;
+    
+    // Utilisation de descriptionHtml pour conserver le formatage du CMS
+    const ProductDescriptionContent = () => (
+        <div 
+            // Application de styles pour les éléments bruts du HTML
+            className="text-sm leading-relaxed text-stone-700 [&>p]:mb-4 [&>ul]:list-disc [&>ul]:ml-6 [&>ul]:mb-4 [&>li]:mb-2" 
+            dangerouslySetInnerHTML={{ __html: product.descriptionHtml }}
+        >
+        </div>
+    );
+
+    return (
+        <div className="fixed inset-0 z-[80] bg-black/10 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
+            {/* Contenu de la modale avec la couleur du site */}
+            <div className="bg-finca-light w-full max-w-lg shadow-2xl p-8 relative rounded-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900"><X size={20} /></button>
+                
+                <h3 className="font-serif text-2xl text-stone-900 mb-2">{product.title}</h3>
+                <p className="text-stone-500 text-xs uppercase tracking-widest mb-6 border-b border-stone-200 pb-3">Détails et Description</p>
+                
+                {/* Image principale */}
+                <div className="w-full aspect-[4/3] bg-stone-100 mb-6 rounded-md overflow-hidden">
+                    <img 
+                      src={product.images?.edges?.[0]?.node?.url || "https://placehold.co/800x600/F0EBE5/7D7D7D?text=Image"} 
+                      alt={product.title} 
+                      className="w-full h-full object-cover" 
+                    />
+                </div>
+                
+                {/* Description avec mise en forme */}
+                <ProductDescriptionContent />
+
+                <div className="mt-8 pt-4 border-t border-stone-200">
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onClose(); }}
+                        className="w-full bg-stone-900 text-white py-3 uppercase tracking-[0.2em] text-xs font-bold hover:bg-stone-700 transition-colors rounded-sm"
+                    >
+                        Fermer l'aperçu
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 const VariantSelector = ({ product, onClose, onConfirm }) => {
   const variants = product.variants?.edges || [];
   // Le prix minimum est pris du produit si la variante n'a pas encore été sélectionnée
@@ -703,17 +857,18 @@ const VariantSelector = ({ product, onClose, onConfirm }) => {
 
   if (!initialVariant) {
     return (
-        <div className="fixed inset-0 z-[80] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
+        <div className="fixed inset-0 z-[80] bg-black/10 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
             <div className="bg-finca-light w-full max-w-md shadow-2xl p-8 relative rounded-lg" onClick={(e) => e.stopPropagation()}>
                 <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900"><X size={20} /></button>
-                <p className="text-center p-4">Aucune variante n'a pu être trouvée pour ce produit.</p>
+                <p className="text-center p-4">Aucune variante disponible pour ce produit.</p>
             </div>
         </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-[80] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-[80] bg-black/10 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
+      {/* MODALE AVEC FOND OPAQUE COULEUR DU SITE */}
       <div className="bg-finca-light w-full max-w-md shadow-2xl p-8 relative rounded-lg" onClick={(e) => e.stopPropagation()}>
         <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900"><X size={20} /></button>
         <div className="flex gap-6 mb-8">
@@ -738,7 +893,8 @@ const VariantSelector = ({ product, onClose, onConfirm }) => {
                 key={node.id} 
                 onClick={() => setSelectedVariant(node)} 
                 className={`w-full text-left px-4 py-3 text-sm font-serif border rounded-sm transition-all flex justify-between items-center 
-                  ${selectedVariant?.id === node.id ? 'border-stone-900 bg-white shadow-sm' : 'border-stone-200 hover:border-stone-400'}`}>
+                  ${selectedVariant?.id === node.id ? 'border-stone-900 bg-white shadow-sm' : 'border-stone-200 hover:border-stone-400'}`}
+              >
                 <span>{node.title} - {Math.round(parseFloat(node.price.amount))} €</span>
                 {selectedVariant?.id === node.id && <div className="w-2 h-2 bg-stone-900 rounded-full"></div>}
               </button>
@@ -750,7 +906,7 @@ const VariantSelector = ({ product, onClose, onConfirm }) => {
           <div className="flex items-center border border-stone-300 rounded-sm">
             <button onClick={decrement} className="px-3 py-2 hover:bg-stone-100 text-stone-600"><Minus size={14} /></button>
             <span className="px-3 py-2 text-sm font-serif w-8 text-center">{quantity}</span>
-            <button onClick={increment} className="px-3 py-2 hover:bg-stone-100 text-stone-600"><Plus size={14} /></button>
+            <button onClick={increment} className="px-3 py-2 hover:bg-stone-100 text-stone-600"><Plus size={12} /></button>
           </div>
         </div>
         <button 
@@ -1003,7 +1159,7 @@ const CustomFurnitureSection = () => {
 
 
 const ValuesSection = () => (
-    // Remplacement de py-32 par py-20
+    // Remplacement de py-24 par py-16
     <section id="values" className="py-20 bg-finca-light">
         <div className="max-w-[1400px] mx-auto px-6 md:px-12">
             <ScrollFadeIn threshold={0.2}>
@@ -1155,6 +1311,7 @@ const App = () => {
   const [cartItems, setCartItems] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null); 
+  const [selectedDescriptionProduct, setSelectedDescriptionProduct] = useState(null); // Nouvel état pour la modale de description
   const [selectedArticle, setSelectedArticle] = useState(null); 
   const [isArticleView, setIsArticleView] = useState(false);
   
@@ -1191,12 +1348,25 @@ const App = () => {
     loadData();
   }, []);
   
-  // --- LOGIQUE DU PANIER ---
+  // --- LOGIQUE DU PANIER ET DES MODALES ---
   
-  // Ouvre le sélecteur de variantes pour un produit
-  const handleSelectProduct = useCallback((product) => {
+  // Ouvre le sélecteur de variantes (Utilisé par le bouton Ajouter au Panier flottant)
+  const handleOpenVariantSelector = useCallback((product) => {
     setSelectedProduct(product);
+    setSelectedDescriptionProduct(null);
   }, []);
+
+  // Ouvre la modale de description (Utilisé par l'icône Œil)
+  const handleOpenDescriptionModal = useCallback((product) => {
+    setSelectedDescriptionProduct(product);
+    setSelectedProduct(null);
+  }, []);
+
+  // Ferme la modale de description
+  const handleCloseDescriptionModal = useCallback(() => {
+    setSelectedDescriptionProduct(null);
+  }, []);
+
 
   // Ajout effectif au panier (depuis VariantSelector)
   const handleAddToCart = useCallback((product, variant, quantity) => {
@@ -1294,7 +1464,15 @@ const App = () => {
         onBack={handleBackToMain}
       />
       
-      {/* Sélecteur de Variante (Modal) */}
+      {/* Modale de Description (Nouvelle modale) */}
+      {selectedDescriptionProduct && (
+          <ProductDescriptionModal 
+              product={selectedDescriptionProduct} 
+              onClose={handleCloseDescriptionModal}
+          />
+      )}
+
+      {/* Sélecteur de Variante (Modale) */}
       {selectedProduct && (
         <VariantSelector 
           product={selectedProduct} 
@@ -1312,7 +1490,8 @@ const App = () => {
         onRemove={handleRemoveFromCart}
         onCheckout={() => proceedToCheckout(cartItems)}
       />
-      {isCartOpen && <div className="fixed inset-0 bg-black/50 z-40 transition-opacity" onClick={() => setIsCartOpen(false)} />}
+      {/* Overlay: Opacité très faible pour ne pas masquer le contenu */}
+      {isCartOpen && <div className="fixed inset-0 bg-black/10 z-40 transition-opacity" onClick={() => setIsCartOpen(false)} />}
       
       
       {/* Rendu Conditionnel des Vues */}
@@ -1341,7 +1520,9 @@ const App = () => {
               <NouveautesProductCard 
                 key={product.id + index} 
                 product={product} 
-                onClick={handleSelectProduct}
+                onClick={handleOpenDescriptionModal} // L'action principale au clic/touch sur mobile ouvre la description
+                onAddToCart={handleOpenVariantSelector} // Ouvre le sélecteur de variantes (Bouton Add to Cart)
+                onShowDescription={handleOpenDescriptionModal} // Ouvre la description (Icône œil)
               />
             ))}
           </Carousel>
@@ -1353,11 +1534,13 @@ const App = () => {
             anchorId="collections"
             itemWidth={DESIGN_CONFIG.COLLECTION_ITEM_WIDTH}
           >
+            {/* PASSAGE DU HANDLER handleSelectProduct */}
             {regularCollections.map(({ node }) => (
               <CollectionCard 
                 key={node.id} 
                 collection={node} 
-                onClickProduct={handleSelectProduct}
+                onClickProduct={handleOpenDescriptionModal} // Simuler l'aperçu rapide avec la description
+                onQuickAddToCart={handleOpenVariantSelector} // Ouvre le sélecteur de variantes
               />
             ))}
           </Carousel>
@@ -1373,7 +1556,9 @@ const App = () => {
               <ProductCard 
                 key={product.id} 
                 product={product} 
-                onClick={handleSelectProduct}
+                onClick={handleOpenDescriptionModal} // Ouvre la description (L'action principale du clic/touch)
+                onAddToCart={handleOpenVariantSelector} // Ouvre le sélecteur de variantes (Bouton Add to Cart)
+                onShowDescription={handleOpenDescriptionModal} // Ouvre la description (Icône œil)
               />
             ))}
           </Carousel>
