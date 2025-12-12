@@ -903,6 +903,7 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
                 <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900 z-50"><X size={24} /></button>
                 
                 {/* Structure Grid : Verticale sur mobile, 2/3 + 1/3 sur desktop */}
+                {/* h-full + overflow-hidden pour que les enfants gèrent la hauteur */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 h-full overflow-hidden"> 
                     
                     {/* Colonne 1: Image - Taille fixe (50% VH) sur mobile, hauteur complète sur desktop */}
@@ -951,7 +952,7 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
                     </div>
                     
                     {/* Colonne 2: Détails, Prix et Actions (Défilante) */}
-                    {/* CORRECTION CRITIQUE: Ajout de 'h-full' et 'flex-col' pour s'assurer que la colonne prend la hauteur restante sur mobile et permet le défilement du contenu */}
+                    {/* HAUTEUR AJUSTÉE + DEFILEMENT ASSURÉ : h-[calc(100%-50vh)] sur mobile pour prendre l'espace restant. */}
                     <div className="lg:col-span-1 p-8 md:p-10 flex flex-col h-[calc(100%-50vh)] lg:h-full overflow-y-auto">
                         
                         {/* Bloc 1: Titre et Prix (Fixé en haut) */}
@@ -970,8 +971,8 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
                         </div>
                         
                         {/* Bloc 2: Description (Défilant) */}
-                        {/* flex-grow garantit que la description prend l'espace disponible */}
-                        <div className="mb-8 flex-grow">
+                        {/* flex-grow garantit que la description prend l'espace disponible AVANT le bouton fixe */}
+                        <div className="mb-8 flex-grow overflow-y-visible">
                             <ProductDescriptionContent />
                         </div>
 
