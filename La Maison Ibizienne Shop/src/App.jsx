@@ -843,12 +843,15 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
 
     return (
         <div className="fixed inset-0 z-[80] bg-finca-medium/95 lg:bg-finca-medium/95 backdrop-blur-sm flex items-center justify-center p-0 lg:p-4 animate-fade-in" onClick={onClose}>
-            <div className="bg-finca-light w-full max-w-5xl shadow-2xl relative rounded-lg h-full lg:h-[90vh] lg:max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-                <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900 z-50"><X size={24} /></button>
+            {/* CORRECTION MOBILE : flex flex-col pour un défilement complet sur mobile sans écrasement */}
+            <div className="bg-finca-light w-full max-w-5xl shadow-2xl relative rounded-lg h-[90vh] lg:max-h-[90vh] flex flex-col lg:block overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900 z-50 p-2 bg-white/50 rounded-full lg:bg-transparent"><X size={24} /></button>
                 
-                <div className="grid grid-cols-1 lg:grid-cols-3 h-full overflow-hidden"> 
+                {/* Conteneur principal: Scrollable sur mobile */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 h-full overflow-y-auto lg:overflow-hidden"> 
                     
-                    <div className="relative h-[50vh] lg:h-full overflow-hidden bg-stone-100 p-8 flex items-center justify-center lg:col-span-2">
+                    {/* Colonne 1: Image - Hauteur auto sur mobile pour ne pas cacher le contenu, height-full sur desktop */}
+                    <div className="relative h-auto min-h-[40vh] lg:h-full lg:overflow-hidden bg-stone-100 p-8 flex items-center justify-center lg:col-span-2">
                         {isOnSale && (
                                <div className="absolute top-4 left-4 bg-red-600 text-white text-xs px-3 py-1 rounded-sm font-bold z-10">
                                     Save {discountPercentage}%
@@ -859,7 +862,7 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
                           alt={product.title} 
                           key={currentImageUrl}
                           onError={(e) => {e.target.onerror = null; e.target.src="https://placehold.co/1000x800/F0EBE5/7D7D7D?text=Image+Produit"}}
-                          className="object-contain mx-auto w-full h-full max-h-full lg:max-h-[80vh] transition-opacity duration-300" 
+                          className="object-contain mx-auto w-full h-full max-h-[50vh] lg:max-h-[80vh] transition-opacity duration-300" 
                         />
 
                         {images.length > 1 && (
@@ -890,7 +893,8 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
                          </div>
                     </div>
                     
-                    <div className="lg:col-span-1 p-8 md:p-10 flex flex-col h-[calc(100%-50vh)] lg:h-full overflow-y-auto">
+                    {/* Colonne 2: Détails - S'affiche en dessous sur mobile */}
+                    <div className="lg:col-span-1 p-6 md:p-10 flex flex-col lg:h-full lg:overflow-y-auto">
                         <div className="pb-6 border-b border-stone-200 mb-6 flex-shrink-0">
                             <h3 className="font-serif text-3xl text-stone-900 leading-snug">{product.title}</h3>
                             <div className="flex items-baseline mt-2">
@@ -919,7 +923,7 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
                             ))}
                         </div>
 
-                        <div className="flex-shrink-0 lg:pt-4">
+                        <div className="flex-shrink-0 lg:pt-4 pb-8 lg:pb-0">
                             <button 
                                 onClick={(e) => { e.stopPropagation(); onClose(); handleOpenVariantSelector(product); }}
                                 className="w-full bg-stone-900 text-white py-3 uppercase tracking-widest text-xs font-bold hover:bg-stone-700 transition-colors rounded-sm mt-4"
@@ -1325,12 +1329,12 @@ const CustomFurnitureModal = ({ isOpen, onClose }) => {
 
     return (
         <div className="fixed inset-0 z-[80] bg-finca-medium/95 lg:bg-finca-medium/95 backdrop-blur-sm flex items-center justify-center p-0 lg:p-4 animate-fade-in" onClick={onClose}>
-            <div className="bg-finca-light w-full max-w-6xl shadow-2xl relative rounded-lg h-full lg:h-[90vh] lg:max-h-[90vh] flex overflow-hidden" onClick={(e) => e.stopPropagation()}>
-                <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900 z-50"><X size={24} /></button>
+            <div className="bg-finca-light w-full max-w-6xl shadow-2xl relative rounded-lg h-full lg:h-[90vh] lg:max-h-[90vh] flex flex-col lg:block overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900 z-50 p-2 bg-white/50 rounded-full lg:bg-transparent"><X size={24} /></button>
                 
-                <div className="grid grid-cols-1 lg:grid-cols-2 w-full h-full">
-                    {/* Colonne Gauche : Inspiration / Storytelling */}
-                    <div className="relative hidden lg:flex flex-col justify-end p-12 bg-stone-900 text-white">
+                <div className="grid grid-cols-1 lg:grid-cols-2 w-full h-full overflow-y-auto lg:overflow-hidden">
+                    {/* Colonne Gauche : Inspiration / Storytelling - VISIBLE SUR MOBILE MAINTENANT */}
+                    <div className="relative h-[40vh] lg:h-full flex flex-col justify-end p-8 lg:p-12 bg-stone-900 text-white">
                         <div className="absolute inset-0 z-0 opacity-60">
                              <img 
                                 src="https://cdn.shopify.com/s/files/1/0943/4005/5378/files/image_2.jpg?v=1765479001" 
@@ -1340,8 +1344,8 @@ const CustomFurnitureModal = ({ isOpen, onClose }) => {
                         </div>
                         <div className="relative z-10">
                             <span className="text-[10px] uppercase tracking-[0.4em] mb-4 block opacity-80">L'Art de l'Unique</span>
-                            <h2 className="text-5xl font-serif mb-6 leading-tight">Votre imagination,<br/>nos mains.</h2>
-                            <p className="text-lg font-light opacity-90 leading-relaxed mb-8">
+                            <h2 className="text-3xl lg:text-5xl font-serif mb-6 leading-tight">Votre imagination,<br/>nos mains.</h2>
+                            <p className="text-sm lg:text-lg font-light opacity-90 leading-relaxed mb-8 hidden lg:block">
                                 "Parce que votre intérieur ne doit ressembler à aucun autre. Nous dessinons et fabriquons la pièce qui raconte votre histoire."
                             </p>
                             <div className="flex gap-4 text-xs uppercase tracking-widest opacity-70">
@@ -1353,14 +1357,13 @@ const CustomFurnitureModal = ({ isOpen, onClose }) => {
                     </div>
 
                     {/* Colonne Droite : Formulaire de Brief */}
-                    <div className="flex flex-col h-full overflow-y-auto bg-finca-light p-8 md:p-16">
+                    <div className="flex flex-col h-auto lg:h-full overflow-y-visible lg:overflow-y-auto bg-finca-light p-8 md:p-16">
                         <div className="lg:hidden mb-8">
-                            <h2 className="text-3xl font-serif text-stone-900 mb-2">Sur Mesure</h2>
-                            <p className="text-stone-500 text-sm">Créez votre pièce unique.</p>
+                            <p className="text-stone-500 text-sm mt-4 italic">"Parce que votre intérieur ne doit ressembler à aucun autre."</p>
                         </div>
 
                         {formStatus === 'success' ? (
-                            <div className="flex flex-col items-center justify-center h-full text-center animate-fade-in">
+                            <div className="flex flex-col items-center justify-center h-full text-center animate-fade-in py-12">
                                 <div className="w-16 h-16 bg-stone-900 text-white rounded-full flex items-center justify-center mb-6">
                                     <Send size={32} />
                                 </div>
@@ -1457,12 +1460,12 @@ const CoachingModal = ({ isOpen, onClose }) => {
 
     return (
         <div className="fixed inset-0 z-[80] bg-finca-medium/95 lg:bg-finca-medium/95 backdrop-blur-sm flex items-center justify-center p-0 lg:p-4 animate-fade-in" onClick={onClose}>
-            <div className="bg-finca-light w-full max-w-6xl shadow-2xl relative rounded-lg h-full lg:h-[90vh] lg:max-h-[90vh] flex overflow-hidden" onClick={(e) => e.stopPropagation()}>
-                <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900 z-50"><X size={24} /></button>
+            <div className="bg-finca-light w-full max-w-6xl shadow-2xl relative rounded-lg h-full lg:h-[90vh] lg:max-h-[90vh] flex flex-col lg:block overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900 z-50 p-2 bg-white/50 rounded-full lg:bg-transparent"><X size={24} /></button>
                 
-                <div className="grid grid-cols-1 lg:grid-cols-2 w-full h-full">
-                    {/* Colonne Gauche : Storytelling Coaching */}
-                    <div className="relative hidden lg:flex flex-col justify-end p-12 bg-stone-900 text-white">
+                <div className="grid grid-cols-1 lg:grid-cols-2 w-full h-full overflow-y-auto lg:overflow-hidden">
+                    {/* Colonne Gauche : Storytelling Coaching - VISIBLE SUR MOBILE */}
+                    <div className="relative h-[40vh] lg:h-full flex flex-col justify-end p-8 lg:p-12 bg-stone-900 text-white">
                         <div className="absolute inset-0 z-0 opacity-60">
                              <img 
                                 src={SITE_CONFIG.COACHING.IMAGE_URL} 
@@ -1472,9 +1475,9 @@ const CoachingModal = ({ isOpen, onClose }) => {
                         </div>
                         <div className="relative z-10">
                             <span className="text-[10px] uppercase tracking-[0.4em] mb-4 block opacity-80">L'Expertise à vos côtés</span>
-                            <h2 className="text-5xl font-serif mb-6 leading-tight">Ne rêvez plus votre intérieur,<br/>vivez-le.</h2>
-                            <p className="text-lg font-light opacity-90 leading-relaxed mb-8">
-                                "Vous avez les idées mais pas le temps ? Ou l'envie mais pas les idées ? Notre service de coaching s'adapte à vos besoins. De la simple recommandation à la rénovation complète, nous optimisons votre budget pour un résultat spectaculaire."
+                            <h2 className="text-3xl lg:text-5xl font-serif mb-6 leading-tight">Ne rêvez plus votre intérieur,<br/>vivez-le.</h2>
+                            <p className="text-sm lg:text-lg font-light opacity-90 leading-relaxed mb-8 hidden lg:block">
+                                "Vous avez les idées mais pas le temps ? Ou l'envie mais pas les idées ? Notre service de coaching s'adapte à vos besoins."
                             </p>
                             <div className="flex gap-4 text-xs uppercase tracking-widest opacity-70">
                                 <span className="flex items-center gap-2"><Sparkles size={14}/> Sublimer</span>
@@ -1485,14 +1488,13 @@ const CoachingModal = ({ isOpen, onClose }) => {
                     </div>
 
                     {/* Colonne Droite : Formulaire Coaching */}
-                    <div className="flex flex-col h-full overflow-y-auto bg-finca-light p-8 md:p-16">
+                    <div className="flex flex-col h-auto lg:h-full overflow-y-visible lg:overflow-y-auto bg-finca-light p-8 md:p-16">
                         <div className="lg:hidden mb-8">
-                            <h2 className="text-3xl font-serif text-stone-900 mb-2">Coaching Déco</h2>
-                            <p className="text-stone-500 text-sm">Révélez le potentiel de votre intérieur.</p>
+                            <p className="text-stone-500 text-sm mt-4 italic">"Vous avez les idées mais pas le temps ? Ou l'envie mais pas les idées ? Révélez le potentiel de votre intérieur."</p>
                         </div>
 
                         {formStatus === 'success' ? (
-                            <div className="flex flex-col items-center justify-center h-full text-center animate-fade-in">
+                            <div className="flex flex-col items-center justify-center h-full text-center animate-fade-in py-12">
                                 <div className="w-16 h-16 bg-stone-900 text-white rounded-full flex items-center justify-center mb-6">
                                     <Send size={32} />
                                 </div>
@@ -1872,6 +1874,7 @@ const App = () => {
   const [isPhilosophyOpen, setIsPhilosophyOpen] = useState(false); // NOUVEAU: Modale Philosophie
 
   const [selectedCollectionId, setSelectedCollectionId] = useState(null);
+  const [randomizedProducts, setRandomizedProducts] = useState([]); // Pour le mélange aléatoire
   
   const logoText = data?.shop?.name || "LA MAISON";
   const collections = data?.collections?.edges || [];
@@ -1914,9 +1917,18 @@ const App = () => {
     : allProducts.slice(0, 10) // Fallback
   , [newArrivalsCollection, allProducts]);
   
+  // LOGIQUE DE MÉLANGE ALÉATOIRE (Shuffle)
+  useEffect(() => {
+      if (allProducts.length > 0 && randomizedProducts.length === 0) {
+          const shuffled = [...allProducts].sort(() => 0.5 - Math.random());
+          setRandomizedProducts(shuffled.slice(0, 4));
+      }
+  }, [allProducts]);
+
   const filteredProducts = useMemo(() => {
     if (!selectedCollectionId || selectedCollectionId === 'all') {
-        return allProducts;
+        // Utilise les produits aléatoires si aucun filtre n'est actif
+        return randomizedProducts.length > 0 ? randomizedProducts : allProducts.slice(0, 4);
     }
     
     const targetCollection = collections.find(c => c.node.id === selectedCollectionId);
@@ -1929,7 +1941,7 @@ const App = () => {
     }
     
     return allProducts; 
-  }, [selectedCollectionId, allProducts, collections, newArrivalsCollection, nouveautesProducts]);
+  }, [selectedCollectionId, allProducts, collections, newArrivalsCollection, nouveautesProducts, randomizedProducts]);
 
   useEffect(() => {
     const loadData = async () => {
