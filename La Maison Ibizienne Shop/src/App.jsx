@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { ShoppingBag, X, Instagram, Facebook, Loader, ChevronRight, Menu, ArrowLeft, Heart, ChevronDown, Minus, Plus, ChevronLeft, MessageSquare, Eye } from 'lucide-react';
+import { ShoppingBag, X, Instagram, Facebook, Loader, ChevronRight, Menu, ArrowLeft, Heart, ChevronDown, Minus, Plus, ChevronLeft, MessageSquare, Eye, PenTool, Ruler, Send, Sparkles, Home, PiggyBank, Mail, DraftingCompass } from 'lucide-react';
 
 // ==============================================================================
 // 1. CONFIGURATION TECHNIQUE & STYLE
 // ==============================================================================
 
-// Configuration Tailwind CSS (Assumée disponible dans l'environnement)
-// Les polices 'Inter' et 'Playfair Display' sont définies ici pour être utilisées via font-sans et font-serif.
-const TailwindConfig = `
-  tailwind.config = {
+// --- APPLICATION DE LA CONFIGURATION TAILWIND ---
+if (typeof window !== 'undefined' && window.tailwind) {
+  window.tailwind.config = {
     theme: {
       extend: {
         fontFamily: {
@@ -22,12 +21,27 @@ const TailwindConfig = `
           'finca-light': '#FDFBF7', // Off-White Background
           'finca-medium': '#F0EBE5', // Beige/Sand
         },
+        keyframes: {
+          fadeIn: {
+            '0%': { opacity: '0' },
+            '100%': { opacity: '1' },
+          }
+        },
+        animation: {
+          'fade-in': 'fadeIn 0.3s ease-out forwards',
+        }
       }
     }
-  }
-`;
+  };
+}
 
-// Paramètres Shopify API (Nécessitent un jeton d'accès et un domaine valides)
+// --- BALISES GOOGLE ---
+const GOOGLE_TAGS = {
+  AW: 'AW-17214042080',
+  GT: 'GT-MK9MRNJ3'
+};
+
+// Paramètres Shopify API
 const DEFAULT_ACCESS_TOKEN = '4b2746c099f9603fde4f9639336a235d'; 
 const DEFAULT_SHOPIFY_DOMAIN = '91eg2s-ah.myshopify.com';
 
@@ -41,60 +55,41 @@ const SHOPIFY_DOMAIN = (typeof process !== 'undefined' && process.env.REACT_APP_
 
 const API_VERSION = '2024-01';
 
-
-// Définition des couleurs principales pour les composants (déjà faites mais conservées)
-const COLOR_LIGHT = '#FDFBF7'; // finca-light
-const COLOR_MEDIUM = '#F0EBE5'; // finca-medium
+// Définition des couleurs principales
+const COLOR_LIGHT = '#FDFBF7';
+const COLOR_MEDIUM = '#F0EBE5';
 
 
 // ==============================================================================
-// 2. DESIGN & CONFIGURATION (AJOUTÉ : Définition des largeurs d'items)
+// 2. DESIGN & CONFIGURATION
 // ==============================================================================
 
-/**
- * Configuration des largeurs responsives pour les éléments des carrousels
- * et des filtres de contenu.
- */
 const DESIGN_CONFIG = {
-    // Largeurs d'éléments pour les carrousels (Tailwind classes)
-    // Mobile: 80vw, Tablet: 50vw, Desktop: 30-20vw
     COLLECTION_ITEM_WIDTH: 'w-[80vw] sm:w-[50vw] md:w-[40vw] lg:w-[30vw] xl:w-[25vw]',
     PRODUCT_ITEM_WIDTH: 'w-[80vw] sm:w-[50vw] md:w-[40vw] lg:w-[30vw] xl:w-[25vw]',
     JOURNAL_ITEM_WIDTH: 'w-[80vw] sm:w-[50vw] md:w-[40vw] lg:w-[30vw] xl:w-[25vw]',
-    // Nouveautés plus petits pour un effet galerie dense
     NOUVEAUTES_ITEM_WIDTH: 'w-[60vw] sm:w-[45vw] md:w-[30vw] lg:w-[25vw] xl:w-[20vw]',
-
-    // Filtres de contenu pour la vue Article (pour retirer le contenu CMS indésirable)
     ARTICLE_CLEANUP_FILTERS: [
-        'Pour en savoir plus sur les produits présentés' // Exemple de bloc souvent indésirable dans le corps du texte
+        'Pour en savoir plus sur les produits présentés'
     ],
 };
 
 
 // ==============================================================================
-// 3. CONFIGURATION DU CONTENU (TEXTES, LIENS, IMAGES - Modifiables ici)
+// 3. CONFIGURATION DU CONTENU
 // ==============================================================================
 
-/**
- * Tous les textes, liens et images non gérés directement par l'API Shopify
- * sont regroupés ici pour un paramétrage simple par l'utilisateur final.
- */
 const SITE_CONFIG = {
-  // --- SECTION HÉRO ---
   HERO: {
     VIDEO_URL: "https://cdn.shopify.com/videos/c/o/v/c4d96d8c70b64465835c4eadaa115175.mp4",
     SURTITLE: "Slow Living",
     TITLE: "L'Esprit\nMéditerranéen",
     BUTTON_TEXT: "Explorer"
   },
-
-  // --- SECTION MEUBLES SUR MESURE ---
   CUSTOM_FURNITURE: {
     IMAGE_URL: "https://cdn.shopify.com/s/files/1/0943/4005/5378/files/image_2.jpg?v=1765479001",
     TEXT: "Nous réalisons vos meubles sur mesure",
   },
-
-  // --- SECTION MATÉRIAUX / VALEURS (Bloc répétable) ---
   MATERIALS: [
     {
       TITLE: "Bois d'Olivier & Teck",
@@ -109,8 +104,6 @@ const SITE_CONFIG = {
       TEXT: "Chaque pièce est unique, façonnée par des mains expertes."
     }
   ],
-  
-  // --- SECTION COACHING / SERVICE (Bloc image/texte) ---
   COACHING: {
     IMAGE_URL: "https://cdn.shopify.com/s/files/1/0943/4005/5378/files/Deco.jpg?v=1765477933", 
     SURTITLE: "Notre Expertise",
@@ -123,20 +116,27 @@ const SITE_CONFIG = {
     ],
     BUTTON_TEXT: "Découvrir le Coaching"
   },
-
-  // --- LIENS SOCIAUX ET EXTERNES (Utilisés dans le Footer) ---
+  // NOUVEAU BLOC : Philosophie
+  PHILOSOPHY: {
+    IMAGE_URL: "https://cdn.shopify.com/s/files/1/0943/4005/5378/files/Couloir_boh_me.png?v=1765627710",
+    SURTITLE: "Notre ADN",
+    TITLE: "L'Architecture comme\nPoint de Départ",
+    DESCRIPTION: "Derrière La Maison Ibizienne se cache une vision structurée, celle d'une architecte HMNOP passionnée par l'âme des lieux. Nous ne faisons pas que décorer, nous construisons des atmosphères.",
+    POINTS: [
+        "Rigueur architecturale & Créativité bohème",
+        "Respect des volumes et de la lumière",
+        "Matériaux durables et authentiques"
+    ]
+  },
   SOCIAL_LINKS: {
     CONTACT_URL: "#contact", 
     DELIVERY_URL: "#delivery", 
     PHILOSOPHY_URL: "#philosophy", 
-    
     INSTAGRAM_URL: "https://www.instagram.com/lamaisonibizienne", 
     INSTAGRAM_HANDLE: "@lamaisonibizienne",
     FACEBOOK_URL: "https://www.facebook.com/lamaisonibizienne", 
     TIKTOK_URL: "https://www.tiktok.com/@la.maison.ibizienne", 
   },
-  
-  // --- TEXTES DIVERS / NAVIGATION ---
   SECTIONS: {
     UNIVERS: "Nos Univers",
     BOUTIQUE: "La Boutique",
@@ -156,10 +156,6 @@ const SITE_CONFIG = {
 // 4. HOOKS ET LOGIQUE D'ANIMATION
 // ==============================================================================
 
-/**
- * Hook pour détecter l'intersection d'un élément avec le viewport,
- * utilisé pour les animations de type "fade in on scroll".
- */
 const useIntersectionObserver = (options) => {
   const [isIntersecting, setIsIntersecting] = useState(false);
   const targetRef = useRef(null);
@@ -177,7 +173,6 @@ const useIntersectionObserver = (options) => {
 
     return () => {
       if (targetRef.current) {
-        // eslint-disable-next-line react-hooks/exhaustive-deps
         observer.unobserve(targetRef.current);
       }
     };
@@ -186,16 +181,11 @@ const useIntersectionObserver = (options) => {
   return [targetRef, isIntersecting];
 };
 
-/**
- * Composant wrapper pour appliquer une animation de fondu et de légère translation
- * lors du défilement dans le viewport.
- */
 const ScrollFadeIn = ({ children, delay = 0, threshold = 0.1, className = "", initialScale = 1.0 }) => {
   const [ref, isVisible] = useIntersectionObserver({ threshold: threshold });
   
   const baseClasses = 'transition-all duration-1000 ease-out';
   const visibleClasses = 'opacity-100 translate-y-0 scale-100';
-  
   const hiddenClasses = `opacity-0 translate-y-8 scale-[${initialScale}]`;
 
   return (
@@ -214,32 +204,27 @@ const ScrollFadeIn = ({ children, delay = 0, threshold = 0.1, className = "", in
 // 5. LOGIQUE API & FALLBACKS
 // ==============================================================================
 
-/**
- * Simule la redirection vers le paiement Shopify.
- * @param {Array} cartItems - Les articles du panier.
- */
 const proceedToCheckout = (cartItems) => {
   if (cartItems.length === 0) return;
-  // Construction d'une chaîne d'items pour le lien direct vers le panier Shopify
   const itemsString = cartItems.map(item => {
-    // Tente d'extraire l'ID numérique de la variante si le format est gid://shopify/...
     let variantId = item.selectedVariantId?.split('/').pop(); 
     if (!variantId) variantId = item.id.split('/').pop();
     return `${variantId}:${item.quantity || 1}`;
   }).join(',');
-  
-  // Redirection (simulation d'ouverture dans un nouvel onglet)
   window.open(`https://${SHOPIFY_DOMAIN}/cart/${itemsString}`, '_blank');
 };
 
-/**
- * Effectue la requête GraphQL vers l'API Storefront de Shopify.
- * Inclut les produits, collections et articles de blog nécessaires.
- */
 async function fetchShopifyData() {
   const query = `
   {
-    shop { name description }
+    shop { 
+      name 
+      description 
+      privacyPolicy { title body }
+      refundPolicy { title body }
+      shippingPolicy { title body }
+      termsOfService { title body }
+    }
     collections(first: 10) { 
       edges {
         node {
@@ -286,16 +271,22 @@ async function fetchShopifyData() {
         }
       }
     }
+    pages(first: 20) {
+      edges {
+        node {
+          id
+          title
+          handle
+          body
+        }
+      }
+    }
   }
   `;
 
   try {
     const storefrontAccessToken = STOREFRONT_ACCESS_TOKEN;
     const shopifyDomain = SHOPIFY_DOMAIN;
-
-    if (!shopifyDomain || storefrontAccessToken === DEFAULT_ACCESS_TOKEN) {
-      console.warn("ATTENTION: Les identifiants Shopify sont par défaut. Les données produits/collections pourraient ne pas être à jour. EN PRODUCTION, configurez les variables d'environnement.");
-    }
 
     const response = await fetch(`https://${shopifyDomain}/api/${API_VERSION}/graphql.json`, {
       method: 'POST',
@@ -320,7 +311,8 @@ async function fetchShopifyData() {
 const FALLBACK_DATA = { 
   shop: { name: "LA MAISON" }, 
   collections: { edges: [] }, 
-  blogs: { edges: [] } 
+  blogs: { edges: [] },
+  pages: { edges: [] }
 };
 
 
@@ -328,10 +320,6 @@ const FALLBACK_DATA = {
 // 6. COMPOSANTS DESIGN
 // ==============================================================================
 
-/**
- * Carte affichant une collection (Univers).
- * Le clic déclenche le filtrage de la section produits.
- */
 const CollectionCard = ({ collection, onFilterCollection }) => {
   const product = collection.products?.edges?.[0]?.node;
   const image = collection.image?.url || product?.images?.edges?.[0]?.node?.url;
@@ -369,20 +357,15 @@ const CollectionCard = ({ collection, onFilterCollection }) => {
   );
 };
 
-/**
- * Carte de produit avec carrousel sur survol/touch et boutons d'action flottants.
- */
 const HoverImageCarouselCard = ({ product, onAddToCart, onShowDescription, aspectClass, PRODUCT_ITEM_WIDTH }) => {
   const images = product.images?.edges?.map(e => e.node.url) || [];
   const [imageIndex, setImageIndex] = useState(0); 
   const [isHovered, setIsHovered] = useState(false);
-  // Détecte si l'appareil est tactile
   const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
   const handleMouseEnter = () => !isTouchDevice && setIsHovered(true);
   const handleMouseLeave = () => !isTouchDevice && setIsHovered(false);
 
-  // Naviguer au changement d'image pour les appareils tactiles
   const goNext = (e) => {
     e.stopPropagation();
     setImageIndex((prevIndex) => (prevIndex + 1) % images.length);
@@ -393,17 +376,14 @@ const HoverImageCarouselCard = ({ product, onAddToCart, onShowDescription, aspec
     setImageIndex((prevIndex) => (prevIndex - 1 + images.length) % images.length);
   };
   
-  // Navigation au survol (Desktop)
   const handleMouseMove = (e) => {
     if (!isTouchDevice && images.length > 1 && isHovered) {
       const card = e.currentTarget;
       const rect = card.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const normalizedX = x / rect.width;
-      
       const segmentWidth = 1 / images.length;
       const newIndex = Math.floor(normalizedX / segmentWidth);
-      
       if (newIndex !== imageIndex) {
         setImageIndex(newIndex);
       }
@@ -414,7 +394,6 @@ const HoverImageCarouselCard = ({ product, onAddToCart, onShowDescription, aspec
   const price = product.priceRange?.minVariantPrice?.amount || '0';
   const currency = product.priceRange?.minVariantPrice?.currencyCode || 'EUR';
 
-  // Fonction de formatage du prix pour affichage
   const formatPriceDisplay = (price) => {
     const amount = parseFloat(price);
     return `${amount.toFixed(2)} ${currency}`;
@@ -433,7 +412,7 @@ const HoverImageCarouselCard = ({ product, onAddToCart, onShowDescription, aspec
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onMouseMove={handleMouseMove}
-      onTouchStart={() => setIsHovered(true)} // Déclenche l'affichage des flèches sur touch
+      onTouchStart={() => setIsHovered(true)} 
       className="group cursor-pointer transition-shadow duration-300 rounded-lg overflow-hidden bg-finca-light relative"
     >
       <div className={`relative ${aspectClass} overflow-hidden bg-stone-100`}>
@@ -444,32 +423,24 @@ const HoverImageCarouselCard = ({ product, onAddToCart, onShowDescription, aspec
           onError={(e) => {e.target.onerror = null; e.target.src="https://placehold.co/800x1000/F0EBE5/7D7D7D?text=Produit"}}
           className="w-full h-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
         />
-        
-        {/* Bouton Quick View / Eye icon */}
         <button 
           onClick={(e) => { e.stopPropagation(); onShowDescription(product); }}
-          className={`absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full text-stone-900 transition-opacity duration-300 z-30 
-                      ${showFloatingButtons ? 'opacity-100' : 'opacity-0'}`}
+          className={`absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full text-stone-900 transition-opacity duration-300 z-30 ${showFloatingButtons ? 'opacity-100' : 'opacity-0'}`}
           aria-label="Voir la description"
         >
           <Eye size={16} strokeWidth={1.5} />
         </button>
-
-        {/* Bouton "Ajouter au Panier" (Flottant en bas) */}
         <div 
-            className={`absolute inset-x-0 bottom-0 z-30 transition-transform duration-300 
-                        ${showFloatingButtons ? 'translate-y-0' : 'translate-y-full'}`}
+            className={`absolute inset-x-0 bottom-0 z-30 transition-transform duration-300 ${showFloatingButtons ? 'translate-y-0' : 'translate-y-full'}`}
         >
             <button 
                 onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
                 className="w-full bg-stone-900 text-white py-3 uppercase tracking-widest text-[11px] font-bold hover:bg-stone-700 transition-colors"
-                aria-label="Ajouter au panier (choix des options)"
+                aria-label="Ajouter au panier"
             >
                 Ajouter au panier
             </button>
         </div>
-        
-        {/* Navigation Mobile/Tactile */}
         {isTouchDevice && images.length > 1 && isHovered && (
             <>
                 <button 
@@ -486,8 +457,6 @@ const HoverImageCarouselCard = ({ product, onAddToCart, onShowDescription, aspec
                 </button>
             </>
         )}
-
-        {/* Indicateurs de progression (petits points) */}
         {images.length > 1 && (
           <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 flex space-x-1 p-1 bg-black/10 rounded-full z-30">
             {images.map((_, index) => (
@@ -501,18 +470,14 @@ const HoverImageCarouselCard = ({ product, onAddToCart, onShowDescription, aspec
           </div>
         )}
       </div>
-      
-      {/* Informations Produit */}
       <div className="p-4 pt-6 text-center">
         <h3 className="text-base font-serif text-stone-900 mb-1">{product.title}</h3>
         <p className="text-stone-500 text-[11px] uppercase tracking-widest font-sans mb-2">{product.productType}</p>
-        {/* Affichage du prix correct */}
         <p className="text-sm font-medium text-stone-900">{formatPriceDisplay(price)}</p>
       </div>
     </div>
   );
 };
-
 
 const ProductCard = (props) => (
   <HoverImageCarouselCard {...props} aspectClass="aspect-[3/4]" />
@@ -522,10 +487,6 @@ const NouveautesProductCard = (props) => (
   <HoverImageCarouselCard {...props} aspectClass="aspect-[1/1]" />
 );
 
-
-/**
- * Carte d'article de blog.
- */
 const ArticleCard = ({ article, onClick }) => {
   const image = article.node.image?.url;
   
@@ -553,16 +514,12 @@ const ArticleCard = ({ article, onClick }) => {
   );
 };
 
-/**
- * Composant de carrousel réutilisable avec navigation par flèches.
- */
 const Carousel = ({ title, subtitle, anchorId, itemWidth, children }) => {
   const scrollContainerRef = useRef(null);
 
   const scroll = (direction) => {
     if (scrollContainerRef.current) {
       const { current } = scrollContainerRef;
-      // Défilement par la taille du conteneur (plus fluide que par item)
       const scrollAmount = current.clientWidth * 0.8; 
       
       if (direction === 'left') {
@@ -629,15 +586,11 @@ const Carousel = ({ title, subtitle, anchorId, itemWidth, children }) => {
   );
 };
 
-/**
- * Sidebar du panier d'achat.
- */
 const CartSidebar = ({ cartItems, isCartOpen, onClose, onUpdateQuantity, onRemove, onCheckout }) => {
   const subtotal = cartItems.reduce((sum, item) => {
     return sum + (parseFloat(item.price) * item.quantity);
   }, 0);
 
-  // Mise à jour: Affichage du prix avec 2 décimales
   const formatPrice = (amount) => `${parseFloat(amount).toFixed(2)} €`;
 
   return (
@@ -691,7 +644,6 @@ const CartSidebar = ({ cartItems, isCartOpen, onClose, onUpdateQuantity, onRemov
       <div className="absolute bottom-0 w-full p-6 bg-white border-t border-stone-200">
         <div className="flex justify-between mb-4 text-lg font-bold text-stone-900">
           <span>Sous-total:</span>
-          {/* Utilisation de la nouvelle fonction formatPrice */}
           <span>{formatPrice(subtotal)}</span>
         </div>
         <button 
@@ -706,22 +658,30 @@ const CartSidebar = ({ cartItems, isCartOpen, onClose, onUpdateQuantity, onRemov
   );
 };
 
-// --- NOUVEAU COMPOSANT : Menu Mobile Sidebar ---
-const MobileMenuSidebar = ({ isMenuOpen, onClose, onNavigate }) => {
-    // Liste des liens de navigation basés sur les ancres de la Navbar desktop
+// --- MISE À JOUR MENU MOBILE (Lien Contact et Philosophie) ---
+const MobileMenuSidebar = ({ isMenuOpen, onClose, onNavigate, onContactClick, onPhilosophyClick }) => {
+    
+    // Modification: gestion des clics pour déclencher les modales
+    const handleLinkClick = (e, link) => {
+        e.preventDefault();
+        onClose(); 
+        
+        if (link.action === 'contact') {
+            onContactClick();
+        } else if (link.action === 'philosophy') {
+            onPhilosophyClick();
+        } else {
+            document.getElementById(link.href.substring(1))?.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
+
     const NAV_LINKS = [
         { name: "Collections", href: "#collections" },
         { name: "Coaching", href: "#coaching" },
         { name: "Journal", href: "#journal-section" },
-        { name: "Contact", href: "#contact" }, 
+        { name: "Notre Philosophie", href: "#philosophy", action: 'philosophy' }, // Nouveau
+        { name: "Contact", href: "#contact", action: 'contact' }, // Modifié
     ];
-
-    const handleLinkClick = (e, href) => {
-        e.preventDefault();
-        onClose(); // Ferme le menu
-        // Simuler le défilement vers l'ancre
-        document.getElementById(href.substring(1))?.scrollIntoView({ behavior: 'smooth' });
-    };
 
     return (
         <div 
@@ -738,7 +698,7 @@ const MobileMenuSidebar = ({ isMenuOpen, onClose, onNavigate }) => {
                         <li key={index}>
                             <a 
                                 href={link.href} 
-                                onClick={(e) => handleLinkClick(e, link.href)}
+                                onClick={(e) => handleLinkClick(e, link)}
                                 className="font-serif text-lg text-stone-900 hover:text-stone-500 transition-colors block py-2"
                             >
                                 {link.name}
@@ -750,12 +710,8 @@ const MobileMenuSidebar = ({ isMenuOpen, onClose, onNavigate }) => {
         </div>
     );
 };
-// --- FIN NOUVEAU COMPOSANT ---
 
-/**
- * Barre de navigation réactive.
- */
-const Navbar = ({ logo, cartCount, onOpenCart, isArticleView, onBack, onOpenMenu }) => {
+const Navbar = ({ logo, cartCount, onOpenCart, isArticleView, isPolicyView, onBack, onOpenMenu }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   
   useEffect(() => {
@@ -765,12 +721,13 @@ const Navbar = ({ logo, cartCount, onOpenCart, isArticleView, onBack, onOpenMenu
   }, []);
   
   const LogoComponent = () => (
-    <div className={`text-2xl md:text-3xl lg:text-4xl font-serif tracking-[0.15em] font-bold text-center text-stone-900 whitespace-nowrap drop-shadow-sm transition-all duration-500 ${isArticleView ? 'cursor-default' : 'hover:opacity-80'}`}>
+    <div className={`text-2xl md:text-3xl lg:text-4xl font-serif tracking-[0.15em] font-bold text-center text-stone-900 whitespace-nowrap drop-shadow-sm transition-all duration-500 ${isArticleView || isPolicyView ? 'cursor-default' : 'hover:opacity-80'}`}>
       {logo}
     </div>
   );
 
-  if (isArticleView) {
+  // Vue Alternative (Article ou Page Légale)
+  if (isArticleView || isPolicyView) {
     return (
       <nav className="fixed top-0 left-0 w-full z-50 bg-finca-light/95 backdrop-blur-md border-b border-stone-100 py-4 transition-all">
         <div className="max-w-[1200px] mx-auto px-6 flex justify-between items-center">
@@ -784,6 +741,7 @@ const Navbar = ({ logo, cartCount, onOpenCart, isArticleView, onBack, onOpenMenu
     );
   }
 
+  // Vue Normale
   return (
     <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-700 border-b ${isScrolled ? 'bg-finca-light/95 backdrop-blur-md border-stone-200 py-4 shadow-sm' : 'bg-transparent border-transparent py-6'}`}>
       <div className="max-w-[1800px] mx-auto px-6 md:px-12 grid grid-cols-12 items-center">
@@ -792,7 +750,6 @@ const Navbar = ({ logo, cartCount, onOpenCart, isArticleView, onBack, onOpenMenu
           <a href="#coaching" className="hover:text-stone-500 transition-colors whitespace-nowrap" onClick={(e) => { e.preventDefault(); document.getElementById('coaching')?.scrollIntoView({ behavior: 'smooth' }); }}>Coaching</a>
           <a href="#journal-section" className="hover:text-stone-500 transition-colors whitespace-nowrap" onClick={(e) => { e.preventDefault(); document.getElementById('journal-section')?.scrollIntoView({ behavior: 'smooth' }); }}>Journal</a>
         </div>
-        {/* Suppression de lg:mt-5 pour un centrage vertical plus propre */}
         <div className="col-span-12 lg:col-span-4 flex justify-center order-first lg:order-none mb-4 lg:mb-0">
           <a href="#top" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:opacity-80 transition-opacity">
             <LogoComponent />
@@ -816,13 +773,10 @@ const Navbar = ({ logo, cartCount, onOpenCart, isArticleView, onBack, onOpenMenu
   );
 };
 
-/**
- * Section Héro avec vidéo en fond et texte centré.
- */
+// ... [Composants HeroSection, ProductDescriptionModal, VariantSelector sont inchangés]
 const HeroSection = ({ onScroll }) => (
   <div id="top" className="relative h-[95vh] w-full flex flex-col justify-center items-center text-center px-4 overflow-hidden bg-finca-medium">
     <div className="absolute inset-0 z-0">
-        {/* MISE À JOUR: Ajout de 'controls' et 'muted' pour maximiser l'autoplay sur mobile */}
       <video className="w-full h-full object-cover" autoPlay loop muted playsInline controls>
         <source src={SITE_CONFIG.HERO.VIDEO_URL} type="video/mp4" />
       </video>
@@ -842,11 +796,7 @@ const HeroSection = ({ onScroll }) => (
   </div>
 );
 
-/**
- * Modale affichant la description détaillée d'un produit.
- */
 const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }) => {
-    // --- Logique de navigation dans le carrousel ---
     const images = product.images?.edges?.map(e => e.node.url) || [];
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
@@ -859,8 +809,6 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
         e.stopPropagation();
         setCurrentImageIndex((prevIndex) => (prevIndex - 1 + images.length) % images.length);
     };
-    // --- Fin Logique de navigation ---
-
 
     if (!product) return null;
 
@@ -881,7 +829,6 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
         { label: "Origine", value: "Artisanat Indonésien" },
     ];
     
-    // Rendu du HTML de description du produit
     const ProductDescriptionContent = () => (
         <div 
             className="text-sm leading-relaxed text-stone-700 [&>p]:mb-4 [&>ul]:list-disc [&>ul]:ml-6 [&>ul]:mb-4 [&>li]:mb-2" 
@@ -890,27 +837,21 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
         </div>
     );
     
-    // Mise à jour: Affichage du prix avec 2 décimales
     const formatPriceDisplay = (price) => `€${parseFloat(price).toFixed(2)}`;
 
     const currentImageUrl = images[currentImageIndex] || "https://placehold.co/1000x800/F0EBE5/7D7D7D?text=Image+Produit";
 
     return (
-        // Overlay - Fond 100% opaque sur mobile (bg-finca-medium) pour masquer le contenu derrière et améliorer la lisibilité
         <div className="fixed inset-0 z-[80] bg-finca-medium/95 lg:bg-finca-medium/95 backdrop-blur-sm flex items-center justify-center p-0 lg:p-4 animate-fade-in" onClick={onClose}>
-            {/* Contenu de la modale: Pleine hauteur sur mobile (`h-full` et `max-h-full`) */}
             <div className="bg-finca-light w-full max-w-5xl shadow-2xl relative rounded-lg h-full lg:h-[90vh] lg:max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
                 <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900 z-50"><X size={24} /></button>
                 
-                {/* Structure Grid : Verticale sur mobile, 2/3 + 1/3 sur desktop */}
-                {/* h-full + overflow-hidden pour que les enfants gèrent la hauteur */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 h-full overflow-hidden"> 
                     
-                    {/* Colonne 1: Image - Taille fixe (50% VH) sur mobile, hauteur complète sur desktop */}
                     <div className="relative h-[50vh] lg:h-full overflow-hidden bg-stone-100 p-8 flex items-center justify-center lg:col-span-2">
                         {isOnSale && (
                                <div className="absolute top-4 left-4 bg-red-600 text-white text-xs px-3 py-1 rounded-sm font-bold z-10">
-                                   Save {discountPercentage}%
+                                    Save {discountPercentage}%
                                </div>
                         )}
                         <img 
@@ -918,11 +859,9 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
                           alt={product.title} 
                           key={currentImageUrl}
                           onError={(e) => {e.target.onerror = null; e.target.src="https://placehold.co/1000x800/F0EBE5/7D7D7D?text=Image+Produit"}}
-                          // Hauteur max sur desktop pour éviter de déborder, et height-full sur mobile
                           className="object-contain mx-auto w-full h-full max-h-full lg:max-h-[80vh] transition-opacity duration-300" 
                         />
 
-                         {/* Boutons de navigation (si > 1 image) */}
                         {images.length > 1 && (
                             <>
                                 <button 
@@ -951,11 +890,7 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
                          </div>
                     </div>
                     
-                    {/* Colonne 2: Détails, Prix et Actions (Défilante) */}
-                    {/* HAUTEUR AJUSTÉE + DEFILEMENT ASSURÉ : h-[calc(100%-50vh)] sur mobile pour prendre l'espace restant. */}
                     <div className="lg:col-span-1 p-8 md:p-10 flex flex-col h-[calc(100%-50vh)] lg:h-full overflow-y-auto">
-                        
-                        {/* Bloc 1: Titre et Prix (Fixé en haut) */}
                         <div className="pb-6 border-b border-stone-200 mb-6 flex-shrink-0">
                             <h3 className="font-serif text-3xl text-stone-900 leading-snug">{product.title}</h3>
                             <div className="flex items-baseline mt-2">
@@ -970,13 +905,10 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
                             </div>
                         </div>
                         
-                        {/* Bloc 2: Description (Défilant) */}
-                        {/* flex-grow garantit que la description prend l'espace disponible AVANT le bouton fixe */}
-                        <div className="mb-8 flex-grow overflow-y-visible">
+                        <div className="mb-8"> 
                             <ProductDescriptionContent />
                         </div>
 
-                        {/* Bloc 3: Spécifications (Fixé/Contenu additionnel) */}
                         <div className="mb-8 p-4 bg-finca-medium rounded-lg flex-shrink-0">
                             <h4 className="text-sm font-bold text-stone-900 mb-4 uppercase tracking-widest">Spécifications du produit</h4>
                             {mockSpecifications.map((spec, index) => (
@@ -987,7 +919,6 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
                             ))}
                         </div>
 
-                        {/* Bloc 4: Bouton d'Action (Fixé en bas) */}
                         <div className="flex-shrink-0 lg:pt-4">
                             <button 
                                 onClick={(e) => { e.stopPropagation(); onClose(); handleOpenVariantSelector(product); }}
@@ -1004,9 +935,6 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
     );
 };
 
-/**
- * Modale de sélection de variante et de quantité.
- */
 const VariantSelector = ({ product, onClose, onConfirm }) => {
   const variants = product.variants?.edges || [];
   const initialVariant = variants.length > 0 ? variants[0].node : null;
@@ -1017,10 +945,8 @@ const VariantSelector = ({ product, onClose, onConfirm }) => {
   const decrement = () => setQuantity(q => (q > 1 ? q - 1 : 1));
   
   const currentPrice = selectedVariant?.price?.amount || product.priceRange?.minVariantPrice?.amount || 0;
-  // Utilisation de toFixed(2) pour le prix final
   const finalPrice = (parseFloat(currentPrice) * quantity).toFixed(2);
   
-  // Fonction pour afficher le prix de la variante
   const formatVariantPrice = (price) => `${parseFloat(price).toFixed(2)} €`;
 
   if (!initialVariant) {
@@ -1056,7 +982,6 @@ const VariantSelector = ({ product, onClose, onConfirm }) => {
           <div>
             <h3 className="font-serif text-xl text-stone-900 mb-2">{product.title}</h3>
             <p className="text-stone-500 text-xs uppercase tracking-widest mb-3">{product.productType}</p>
-            {/* Affichage du prix sans arrondi */}
             <p className="text-sm font-medium text-stone-900">{finalPrice} €</p>
           </div>
         </div>
@@ -1070,7 +995,6 @@ const VariantSelector = ({ product, onClose, onConfirm }) => {
                 className={`w-full text-left px-4 py-3 text-sm font-serif border rounded-sm transition-all flex justify-between items-center 
                   ${selectedVariant?.id === node.id ? 'border-stone-900 bg-white shadow-sm' : 'border-stone-200 hover:border-stone-400'}`}
               >
-                {/* Affichage du prix de la variante sans arrondi */}
                 <span>{node.title} - {formatVariantPrice(node.price.amount)}</span>
                 {selectedVariant?.id === node.id && <div className="w-2 h-2 bg-stone-900 rounded-full"></div>}
               </button>
@@ -1096,37 +1020,29 @@ const VariantSelector = ({ product, onClose, onConfirm }) => {
   );
 };
 
-/**
- * Vue détaillée d'un article de blog.
- */
 const ArticleView = ({ article }) => {
   useEffect(() => {
-    // S'assurer que l'article est chargé en haut de l'écran.
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
   if (!article) return null;
   const node = article.node;
 
-  // Logique de conversion du HTML du CMS en blocs de texte simples.
   const processArticleContent = (html) => {
     let text = html
         .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
         .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
         .replace(/\{\s*\"@context\":\s*\"https:\/\/schema\.org\"[\s\S]*?\}/g, ' ');
 
-    // Convertir les balises de bloc en sauts de ligne pour structurer le texte
     text = text.replace(/(<\/?p>|<\/?h\d>|<\/?li>|<\/?div>|<br\b[^>]*\/?>)/gi, '\n\n'); 
-    text = text.replace(/<[^>]+>/g, ' '); // Enlève les balises restantes (e.g., span, a, b)
+    text = text.replace(/<[^>]+>/g, ' '); 
     
-    // Nettoyage supplémentaire basé sur la configuration
     DESIGN_CONFIG.ARTICLE_CLEANUP_FILTERS.forEach(filterText => {
       const escapedFilter = filterText.replace(/([.*+?^=!:${}()|[\]/\\])/g, '\\$1');
       const regex = new RegExp(escapedFilter, 'g');
       text = text.replace(regex, ' ').trim();
     });
     
-    // Réduire les sauts de ligne multiples et espaces superflus
     text = text.replace(/(\s*\n\s*){2,}/g, '\n\n').trim(); 
     text = text.replace(/[ \t]+/g, ' '); 
     
@@ -1135,14 +1051,13 @@ const ArticleView = ({ article }) => {
       .filter(line => line.length > 0);
     
     const elements = [];
-    const numberedTitleRegex = /^(\d+\.?\s+)(.+)/i; // Détecte les titres numérotés ou en gras
+    const numberedTitleRegex = /^(\d+\.?\s+)(.+)/i; 
 
     blocks.forEach((block, index) => {
       if (!block.trim().length) return; 
 
       const match = block.match(numberedTitleRegex);
       
-      // Heuristique pour déterminer si c'est un titre (numéroté ou très court)
       if (match || block.length < 50) { 
         elements.push({
           type: 'title',
@@ -1243,15 +1158,455 @@ const ArticleView = ({ article }) => {
   );
 };
 
-/**
- * Section Meubles sur Mesure avec effet de rideau basé sur le scroll.
- */
-const CustomFurnitureSection = () => {
+// --- NOUVEAU COMPOSANT : MODALE CONTACT ---
+const ContactModal = ({ isOpen, onClose }) => {
+    const [formStatus, setFormStatus] = useState('idle');
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        setFormStatus('sending');
+        setTimeout(() => {
+            setFormStatus('success');
+        }, 1500);
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[90] bg-finca-medium/95 lg:bg-finca-medium/95 backdrop-blur-sm flex items-center justify-center p-0 lg:p-4 animate-fade-in" onClick={onClose}>
+            <div className="bg-finca-light w-full max-w-lg shadow-2xl relative rounded-lg p-8 md:p-12 overflow-y-auto max-h-full" onClick={(e) => e.stopPropagation()}>
+                <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900 z-50"><X size={24} /></button>
+                
+                <div className="text-center mb-8">
+                    <span className="text-[10px] uppercase tracking-[0.3em] text-stone-500 font-bold font-sans block mb-2">
+                        Contact
+                    </span>
+                    <h2 className="text-3xl font-serif text-stone-900">Une question ?</h2>
+                    <p className="text-stone-500 font-light mt-2">N'hésitez pas à nous écrire, nous vous répondrons rapidement.</p>
+                </div>
+
+                {formStatus === 'success' ? (
+                    <div className="flex flex-col items-center justify-center text-center py-12 animate-fade-in">
+                        <div className="w-16 h-16 bg-stone-900 text-white rounded-full flex items-center justify-center mb-6">
+                            <Mail size={32} />
+                        </div>
+                        <h3 className="text-xl font-serif text-stone-900 mb-4">Message Envoyé</h3>
+                        <p className="text-stone-500 mb-8">
+                            Merci de votre message. Notre équipe revient vers vous très vite.
+                        </p>
+                        <button 
+                            onClick={onClose}
+                            className="border-b border-stone-900 text-stone-900 uppercase tracking-widest text-xs pb-1 hover:opacity-70"
+                        >
+                            Fermer
+                        </button>
+                    </div>
+                ) : (
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div>
+                            <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Nom</label>
+                            <input required type="text" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="Nom Prénom" />
+                        </div>
+                        <div>
+                            <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Email</label>
+                            <input required type="email" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="email@exemple.com" />
+                        </div>
+                        <div>
+                            <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Sujet</label>
+                            <select className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors appearance-none cursor-pointer">
+                                <option>Question sur un produit</option>
+                                <option>Suivi de commande</option>
+                                <option>Demande de partenariat</option>
+                                <option>Presse</option>
+                                <option>Autre</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Message</label>
+                            <textarea required rows="4" className="w-full bg-stone-50 border border-stone-200 p-4 rounded-sm focus:border-stone-900 focus:outline-none transition-colors text-sm" placeholder="Comment pouvons-nous vous aider ?"></textarea>
+                        </div>
+
+                        <div className="pt-2">
+                            <button 
+                                type="submit"
+                                disabled={formStatus === 'sending'}
+                                className="w-full bg-stone-900 text-white py-4 uppercase tracking-[0.2em] text-xs font-bold hover:bg-stone-700 transition-colors rounded-sm flex items-center justify-center gap-3 disabled:bg-stone-400"
+                            >
+                                {formStatus === 'sending' ? (
+                                    <><Loader className="animate-spin" size={16} /> Envoi...</>
+                                ) : (
+                                    'Envoyer'
+                                )}
+                            </button>
+                        </div>
+                    </form>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// --- NOUVEAU COMPOSANT : MODALE PHILOSOPHIE ---
+const PhilosophyModal = ({ isOpen, onClose }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[80] bg-finca-medium/95 lg:bg-finca-medium/95 backdrop-blur-sm flex items-center justify-center p-0 lg:p-4 animate-fade-in" onClick={onClose}>
+            <div className="bg-finca-light w-full max-w-6xl shadow-2xl relative rounded-lg h-full lg:h-[90vh] lg:max-h-[90vh] flex overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900 z-50"><X size={24} /></button>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 w-full h-full">
+                    {/* Colonne Gauche : Image */}
+                    <div className="relative h-[40vh] lg:h-full bg-stone-200">
+                         <img 
+                            src={SITE_CONFIG.PHILOSOPHY.IMAGE_URL} 
+                            alt="Architecte au travail" 
+                            className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-stone-900/20"></div>
+                    </div>
+
+                    {/* Colonne Droite : Contenu */}
+                    <div className="flex flex-col h-full overflow-y-auto bg-finca-light p-8 md:p-16 justify-center">
+                        <div>
+                            <span className="text-[10px] uppercase tracking-[0.3em] text-stone-500 font-bold font-sans block mb-4">
+                                {SITE_CONFIG.PHILOSOPHY.SURTITLE}
+                            </span>
+                            <h2 className="text-4xl md:text-5xl font-serif text-stone-900 leading-tight mb-8 whitespace-pre-line">
+                                {SITE_CONFIG.PHILOSOPHY.TITLE}
+                            </h2>
+                            <p className="text-lg font-light text-stone-700 mb-10 leading-relaxed">
+                                {SITE_CONFIG.PHILOSOPHY.DESCRIPTION}
+                            </p>
+                            
+                            <div className="space-y-6">
+                                {SITE_CONFIG.PHILOSOPHY.POINTS.map((point, idx) => (
+                                    <div key={idx} className="flex items-center gap-4 border-b border-stone-200 pb-4 last:border-0">
+                                        <div className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-stone-900 flex-shrink-0">
+                                            {idx === 0 && <DraftingCompass size={20} />}
+                                            {idx === 1 && <Home size={20} />}
+                                            {idx === 2 && <Heart size={20} />}
+                                        </div>
+                                        <span className="font-serif text-lg text-stone-800">{point}</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="mt-12 pt-8 border-t border-stone-200">
+                                <p className="font-serif italic text-stone-500 text-sm">
+                                    "Chaque projet est une rencontre entre un lieu, une histoire et vos envies."
+                                </p>
+                                <p className="text-[10px] uppercase tracking-widest text-stone-400 mt-2 font-bold">
+                                    — L'Architecte
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- NOUVEAU COMPOSANT : MODALE SUR MESURE ---
+const CustomFurnitureModal = ({ isOpen, onClose }) => {
+    const [formStatus, setFormStatus] = useState('idle'); // idle, sending, success
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        setFormStatus('sending');
+        // Simulation d'envoi API
+        setTimeout(() => {
+            setFormStatus('success');
+        }, 1500);
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[80] bg-finca-medium/95 lg:bg-finca-medium/95 backdrop-blur-sm flex items-center justify-center p-0 lg:p-4 animate-fade-in" onClick={onClose}>
+            <div className="bg-finca-light w-full max-w-6xl shadow-2xl relative rounded-lg h-full lg:h-[90vh] lg:max-h-[90vh] flex overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900 z-50"><X size={24} /></button>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 w-full h-full">
+                    {/* Colonne Gauche : Inspiration / Storytelling */}
+                    <div className="relative hidden lg:flex flex-col justify-end p-12 bg-stone-900 text-white">
+                        <div className="absolute inset-0 z-0 opacity-60">
+                             <img 
+                                src="https://cdn.shopify.com/s/files/1/0943/4005/5378/files/image_2.jpg?v=1765479001" 
+                                alt="Atelier artisan" 
+                                className="w-full h-full object-cover"
+                            />
+                        </div>
+                        <div className="relative z-10">
+                            <span className="text-[10px] uppercase tracking-[0.4em] mb-4 block opacity-80">L'Art de l'Unique</span>
+                            <h2 className="text-5xl font-serif mb-6 leading-tight">Votre imagination,<br/>nos mains.</h2>
+                            <p className="text-lg font-light opacity-90 leading-relaxed mb-8">
+                                "Parce que votre intérieur ne doit ressembler à aucun autre. Nous dessinons et fabriquons la pièce qui raconte votre histoire."
+                            </p>
+                            <div className="flex gap-4 text-xs uppercase tracking-widest opacity-70">
+                                <span className="flex items-center gap-2"><PenTool size={14}/> Design</span>
+                                <span className="flex items-center gap-2"><Ruler size={14}/> Sur-Mesure</span>
+                                <span className="flex items-center gap-2"><Heart size={14}/> Fait Main</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Colonne Droite : Formulaire de Brief */}
+                    <div className="flex flex-col h-full overflow-y-auto bg-finca-light p-8 md:p-16">
+                        <div className="lg:hidden mb-8">
+                            <h2 className="text-3xl font-serif text-stone-900 mb-2">Sur Mesure</h2>
+                            <p className="text-stone-500 text-sm">Créez votre pièce unique.</p>
+                        </div>
+
+                        {formStatus === 'success' ? (
+                            <div className="flex flex-col items-center justify-center h-full text-center animate-fade-in">
+                                <div className="w-16 h-16 bg-stone-900 text-white rounded-full flex items-center justify-center mb-6">
+                                    <Send size={32} />
+                                </div>
+                                <h3 className="text-2xl font-serif text-stone-900 mb-4">Demande Envoyée !</h3>
+                                <p className="text-stone-500 mb-8 max-w-sm">
+                                    Merci de nous avoir confié votre inspiration. Notre équipe de designers vous contactera sous 48h pour affiner votre projet.
+                                </p>
+                                <button 
+                                    onClick={onClose}
+                                    className="border-b border-stone-900 text-stone-900 uppercase tracking-widest text-xs pb-1 hover:opacity-70"
+                                >
+                                    Retour à la boutique
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                <h3 className="text-xl font-serif text-stone-900 mb-8 border-l-4 border-stone-200 pl-4">
+                                    Parlez-nous de votre projet
+                                </h3>
+                                
+                                <form onSubmit={handleSubmit} className="space-y-6 flex-grow">
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div className="col-span-2 md:col-span-1">
+                                            <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Nom</label>
+                                            <input required type="text" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="Jean Dupont" />
+                                        </div>
+                                        <div className="col-span-2 md:col-span-1">
+                                            <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Email</label>
+                                            <input required type="email" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="jean@exemple.com" />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Type de Meuble</label>
+                                        <select className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors appearance-none cursor-pointer">
+                                            <option>Table à manger</option>
+                                            <option>Canapé / Fauteuil</option>
+                                            <option>Console / Buffet</option>
+                                            <option>Tête de lit</option>
+                                            <option>Objet de décoration</option>
+                                            <option>Projet complet (Villa/Hôtel)</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Dimensions approximatives</label>
+                                        <input type="text" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="L 200cm x l 90cm..." />
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Inspiration</label>
+                                        <textarea required rows="4" className="w-full bg-stone-50 border border-stone-200 p-4 rounded-sm focus:border-stone-900 focus:outline-none transition-colors text-sm" placeholder="Décrivez le style, les matériaux (bois, rotin, pierre...), l'ambiance recherchée..."></textarea>
+                                    </div>
+
+                                    <div className="pt-4">
+                                        <button 
+                                            type="submit"
+                                            disabled={formStatus === 'sending'}
+                                            className="w-full bg-stone-900 text-white py-4 uppercase tracking-[0.2em] text-xs font-bold hover:bg-stone-700 transition-colors rounded-sm flex items-center justify-center gap-3 disabled:bg-stone-400"
+                                        >
+                                            {formStatus === 'sending' ? (
+                                                <><Loader className="animate-spin" size={16} /> Envoi en cours...</>
+                                            ) : (
+                                                'Envoyer mon brief créatif'
+                                            )}
+                                        </button>
+                                        <p className="text-[9px] text-center text-stone-400 mt-3 italic">
+                                            Aucun engagement. Réponse sous 48h.
+                                        </p>
+                                    </div>
+                                </form>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- NOUVEAU COMPOSANT : MODALE COACHING ---
+const CoachingModal = ({ isOpen, onClose }) => {
+    const [formStatus, setFormStatus] = useState('idle');
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        setFormStatus('sending');
+        setTimeout(() => {
+            setFormStatus('success');
+        }, 1500);
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[80] bg-finca-medium/95 lg:bg-finca-medium/95 backdrop-blur-sm flex items-center justify-center p-0 lg:p-4 animate-fade-in" onClick={onClose}>
+            <div className="bg-finca-light w-full max-w-6xl shadow-2xl relative rounded-lg h-full lg:h-[90vh] lg:max-h-[90vh] flex overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900 z-50"><X size={24} /></button>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 w-full h-full">
+                    {/* Colonne Gauche : Storytelling Coaching */}
+                    <div className="relative hidden lg:flex flex-col justify-end p-12 bg-stone-900 text-white">
+                        <div className="absolute inset-0 z-0 opacity-60">
+                             <img 
+                                src={SITE_CONFIG.COACHING.IMAGE_URL} 
+                                alt="Coaching Déco" 
+                                className="w-full h-full object-cover"
+                            />
+                        </div>
+                        <div className="relative z-10">
+                            <span className="text-[10px] uppercase tracking-[0.4em] mb-4 block opacity-80">L'Expertise à vos côtés</span>
+                            <h2 className="text-5xl font-serif mb-6 leading-tight">Ne rêvez plus votre intérieur,<br/>vivez-le.</h2>
+                            <p className="text-lg font-light opacity-90 leading-relaxed mb-8">
+                                "Vous avez les idées mais pas le temps ? Ou l'envie mais pas les idées ? Notre service de coaching s'adapte à vos besoins. De la simple recommandation à la rénovation complète, nous optimisons votre budget pour un résultat spectaculaire."
+                            </p>
+                            <div className="flex gap-4 text-xs uppercase tracking-widest opacity-70">
+                                <span className="flex items-center gap-2"><Sparkles size={14}/> Sublimer</span>
+                                <span className="flex items-center gap-2"><PiggyBank size={14}/> Optimiser</span>
+                                <span className="flex items-center gap-2"><Home size={14}/> Accompagner</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Colonne Droite : Formulaire Coaching */}
+                    <div className="flex flex-col h-full overflow-y-auto bg-finca-light p-8 md:p-16">
+                        <div className="lg:hidden mb-8">
+                            <h2 className="text-3xl font-serif text-stone-900 mb-2">Coaching Déco</h2>
+                            <p className="text-stone-500 text-sm">Révélez le potentiel de votre intérieur.</p>
+                        </div>
+
+                        {formStatus === 'success' ? (
+                            <div className="flex flex-col items-center justify-center h-full text-center animate-fade-in">
+                                <div className="w-16 h-16 bg-stone-900 text-white rounded-full flex items-center justify-center mb-6">
+                                    <Send size={32} />
+                                </div>
+                                <h3 className="text-2xl font-serif text-stone-900 mb-4">Message Reçu !</h3>
+                                <p className="text-stone-500 mb-8 max-w-sm">
+                                    Votre projet est entre de bonnes mains. Un coach déco vous contactera très rapidement pour un premier échange gratuit.
+                                </p>
+                                <button 
+                                    onClick={onClose}
+                                    className="border-b border-stone-900 text-stone-900 uppercase tracking-widest text-xs pb-1 hover:opacity-70"
+                                >
+                                    Retour au site
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                <h3 className="text-xl font-serif text-stone-900 mb-8 border-l-4 border-stone-200 pl-4">
+                                    Demander un devis coaching
+                                </h3>
+                                
+                                <form onSubmit={handleSubmit} className="space-y-6 flex-grow">
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div className="col-span-2 md:col-span-1">
+                                            <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Nom</label>
+                                            <input required type="text" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="Votre nom" />
+                                        </div>
+                                        <div className="col-span-2 md:col-span-1">
+                                            <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Email</label>
+                                            <input required type="email" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="email@exemple.com" />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Type de Projet</label>
+                                        <select className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors appearance-none cursor-pointer">
+                                            <option>Coaching Déco (Conseils & Shopping list)</option>
+                                            <option>Rénovation Complète (Travaux & Suivi)</option>
+                                            <option>Home Staging (Valorisation pour vente)</option>
+                                            <option>Aménagement d'espace professionnel</option>
+                                            <option>Autre</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Surface & Budget Estimé</label>
+                                        <input type="text" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="Ex: 80m2, env. 15 000€" />
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Vos Attentes</label>
+                                        <textarea required rows="4" className="w-full bg-stone-50 border border-stone-200 p-4 rounded-sm focus:border-stone-900 focus:outline-none transition-colors text-sm" placeholder="Dites-nous en plus sur vos besoins : manque de lumière, besoin de rangement, envie de changement de style..."></textarea>
+                                    </div>
+
+                                    <div className="pt-4">
+                                        <button 
+                                            type="submit"
+                                            disabled={formStatus === 'sending'}
+                                            className="w-full bg-stone-900 text-white py-4 uppercase tracking-[0.2em] text-xs font-bold hover:bg-stone-700 transition-colors rounded-sm flex items-center justify-center gap-3 disabled:bg-stone-400"
+                                        >
+                                            {formStatus === 'sending' ? (
+                                                <><Loader className="animate-spin" size={16} /> Envoi...</>
+                                            ) : (
+                                                'Envoyer ma demande'
+                                            )}
+                                        </button>
+                                        <p className="text-[9px] text-center text-stone-400 mt-3 italic">
+                                            Premier échange téléphonique gratuit et sans engagement.
+                                        </p>
+                                    </div>
+                                </form>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const LegalPageView = ({ page }) => {
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+    }, [page]);
+
+    if (!page) return null;
+
+    const content = page.body; 
+    
+    return (
+        <div className="bg-white min-h-screen pt-32 pb-24 selection:bg-finca-medium/50">
+            <div className="max-w-[1000px] mx-auto px-6">
+                <div className="text-center mb-16">
+                    <span className="text-[10px] uppercase tracking-[0.3em] text-stone-500 font-bold font-sans block mb-4">
+                        Informations Légales
+                    </span>
+                    <h1 className="text-3xl md:text-5xl font-serif text-stone-900 leading-tight">
+                        {page.title}
+                    </h1>
+                </div>
+
+                <div 
+                    className="prose prose-stone max-w-none prose-headings:font-serif prose-headings:font-normal prose-a:text-stone-900 prose-a:underline hover:prose-a:text-stone-600 prose-p:font-light prose-p:text-stone-700"
+                    dangerouslySetInnerHTML={{ __html: content || "<p>Contenu en cours de rédaction.</p>" }}
+                />
+            </div>
+        </div>
+    );
+};
+
+const CustomFurnitureSection = ({ onOpen }) => {
     const sectionRef = useRef(null);
     const [scrollProgress, setScrollProgress] = useState(0); 
     const localColorLight = COLOR_LIGHT; 
 
-    // Logique de suivi du défilement
     useEffect(() => {
         const handleScroll = () => {
             if (sectionRef.current) {
@@ -1283,13 +1638,10 @@ const CustomFurnitureSection = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // Cinématique: 
-    // 1. Ouverture des rideaux (0.0 à 0.5)
     const openProgress = Math.min(1, scrollProgress * 2); 
     const leftCurtainTransform = `translateX(-${openProgress * 100}%)`;
     const rightCurtainTransform = `translateX(${openProgress * 100}%)`;
     
-    // 2. Révélation du texte (0.3 à 0.8)
     const textRevealProgress = Math.max(0, Math.min(1, (scrollProgress - 0.3) / 0.5)); 
     const textOpacity = textRevealProgress;
     const textY = 1 - textRevealProgress; 
@@ -1301,7 +1653,6 @@ const CustomFurnitureSection = () => {
             ref={sectionRef} 
         >
             <div className="absolute inset-0 z-0">
-                {/* Image de fond */}
                 <img
                     src={SITE_CONFIG.CUSTOM_FURNITURE.IMAGE_URL}
                     alt="Meubles sur mesure"
@@ -1310,7 +1661,6 @@ const CustomFurnitureSection = () => {
                 />
             </div>
 
-            {/* Contenu superposé (texte révélé) */}
             <div className="absolute inset-0 z-30 flex items-center justify-center p-8">
                 <div className="text-center" 
                     style={{ 
@@ -1321,21 +1671,23 @@ const CustomFurnitureSection = () => {
                     <h2 className={`text-4xl md:text-6xl font-serif text-white uppercase tracking-wider drop-shadow-lg`}>
                         {SITE_CONFIG.CUSTOM_FURNITURE.TEXT}
                     </h2>
-                    <a href="#contact" className="mt-8 group relative overflow-hidden bg-finca-light text-stone-900 px-8 py-3 uppercase tracking-[0.2em] text-[10px] font-bold transition-all hover:bg-white hover:px-10 rounded-sm inline-block">
+                    
+                    {/* BOUTON MODIFIÉ : Ouvre la modale */}
+                    <button 
+                        onClick={onOpen}
+                        className="mt-8 group relative overflow-hidden bg-finca-light text-stone-900 px-8 py-3 uppercase tracking-[0.2em] text-[10px] font-bold transition-all hover:bg-white hover:px-10 rounded-sm inline-block"
+                    >
                         En savoir plus
-                    </a>
+                    </button>
                 </div>
             </div>
 
-            {/* Masques (Rideaux) - Transition pilotée par l'état React */}
             <div className="absolute inset-0 z-40 pointer-events-none">
-                {/* Panneau Gauche */}
                 <div 
                     className={`absolute top-0 left-0 h-full w-1/2 transition-none`} 
                     style={{ backgroundColor: localColorLight, transform: leftCurtainTransform, transition: 'none' }}
                 />
                 
-                {/* Panneau Droit */}
                 <div 
                     className={`absolute top-0 right-0 h-full w-1/2 transition-none`} 
                     style={{ backgroundColor: localColorLight, transform: rightCurtainTransform, transition: 'none' }}
@@ -1345,9 +1697,6 @@ const CustomFurnitureSection = () => {
     );
 };
 
-/**
- * Section Valeurs et Philosophie.
- */
 const ValuesSection = () => (
     <section id="values" className="py-20 bg-finca-light">
         <div className="max-w-[1400px] mx-auto px-6 md:px-12">
@@ -1360,7 +1709,6 @@ const ValuesSection = () => (
                 {SITE_CONFIG.MATERIALS.map((item, index) => (
                     <ScrollFadeIn key={index} delay={index * 150} threshold={0.5} className="text-center">
                         <div className="text-stone-900 text-4xl mb-4 font-serif italic font-extralight">
-                            {/* Utilisation de numéros pour un style minimaliste */}
                             {index === 0 && <span>01</span>}
                             {index === 1 && <span>02</span>}
                             {index === 2 && <span>03</span>}
@@ -1374,15 +1722,11 @@ const ValuesSection = () => (
     </section>
 );
 
-/**
- * Section Coaching et services d'expertise.
- */
-const CoachingSection = () => (
+const CoachingSection = ({ onOpen }) => (
     <section id="coaching" className="py-20 md:py-24 bg-finca-medium">
         <div className="max-w-[1400px] mx-auto px-6 md:px-12">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
                 
-                {/* Bloc Image */}
                 <ScrollFadeIn threshold={0.4} initialScale={0.95}>
                 <div className="relative aspect-[4/5] bg-stone-100 overflow-hidden rounded-lg shadow-xl">
                     <img 
@@ -1395,7 +1739,6 @@ const CoachingSection = () => (
                 </div>
                 </ScrollFadeIn>
 
-                {/* Bloc Texte / Contenu */}
                 <div className="py-6 lg:py-12">
                     <ScrollFadeIn delay={100} threshold={0.3}>
                     <span className="text-[10px] uppercase tracking-[0.3em] text-stone-500 font-bold font-sans block mb-4">
@@ -1422,9 +1765,12 @@ const CoachingSection = () => (
                     </ul>
                     
                     <ScrollFadeIn delay={600} threshold={0.5}>
-                    <a href="#contact" className="group relative overflow-hidden bg-stone-900 text-white px-8 py-3 uppercase tracking-[0.2em] text-[10px] font-bold transition-all hover:bg-stone-700 hover:px-10 rounded-sm">
+                    <button 
+                        onClick={onOpen}
+                        className="group relative overflow-hidden bg-stone-900 text-white px-8 py-3 uppercase tracking-[0.2em] text-[10px] font-bold transition-all hover:bg-stone-700 hover:px-10 rounded-sm"
+                    >
                         <span className="relative z-10">{SITE_CONFIG.COACHING.BUTTON_TEXT}</span>
-                    </a>
+                    </button>
                     </ScrollFadeIn>
                 </div>
             </div>
@@ -1432,21 +1778,16 @@ const CoachingSection = () => (
     </section>
 );
 
-/**
- * Pied de page du site.
- */
-const Footer = ({ logo }) => (
+const Footer = ({ logo, onPolicyClick, onContactClick, onPhilosophyClick }) => (
     <footer className="bg-stone-900 text-finca-light py-16 md:py-24">
         <div className="max-w-[1400px] mx-auto px-6 md:px-12">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-10 border-b border-stone-800 pb-12 mb-12">
                 
-                {/* Bloc Logo / Philosophie */}
                 <div>
                     <h3 className="text-3xl font-serif tracking-widest font-bold mb-6 text-finca-light">{logo}</h3>
                     <p className="text-stone-400 text-sm font-light whitespace-pre-line">{SITE_CONFIG.FOOTER.ABOUT}</p>
                 </div>
 
-                {/* Bloc Navigation */}
                 <div>
                     <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-stone-300 mb-6">Navigation</h4>
                     <ul className="space-y-3 text-sm">
@@ -1456,17 +1797,15 @@ const Footer = ({ logo }) => (
                     </ul>
                 </div>
 
-                {/* Bloc Infos */}
+                {/* MODIFICATION ICI : Suppression de Livraison et Ajout des actions Contact/Philosophie */}
                 <div>
                     <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-stone-300 mb-6">Informations</h4>
                     <ul className="space-y-3 text-sm">
-                        <li><a href={SITE_CONFIG.SOCIAL_LINKS.CONTACT_URL} className="text-stone-400 hover:text-white transition-colors">Contact</a></li>
-                        <li><a href={SITE_CONFIG.SOCIAL_LINKS.DELIVERY_URL} className="text-stone-400 hover:text-white transition-colors">Livraison</a></li>
-                        <li><a href={SITE_CONFIG.SOCIAL_LINKS.PHILOSOPHY_URL} className="text-stone-400 hover:text-white transition-colors">Notre Philosophie</a></li>
+                        <li><button onClick={onContactClick} className="text-stone-400 hover:text-white transition-colors text-left">Contact</button></li>
+                        <li><button onClick={onPhilosophyClick} className="text-stone-400 hover:text-white transition-colors text-left">Notre Philosophie</button></li>
                     </ul>
                 </div>
                 
-                {/* Bloc Social */}
                 <div>
                     <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-stone-300 mb-6">Suivez-nous</h4>
                     <div className="flex items-center gap-4">
@@ -1484,8 +1823,25 @@ const Footer = ({ logo }) => (
                 </div>
             </div>
             
-            <div className="text-center text-stone-600 text-xs pt-4">
-                © {new Date().getFullYear()} {logo}. Tous droits réservés.
+            {/* --- LISTE DES LIENS LEGAUX --- */}
+            <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-center text-stone-500 text-[10px] uppercase tracking-widest pt-4 font-medium">
+                <span>© {new Date().getFullYear()}, {logo}</span>
+                <span className="hidden md:inline">•</span>
+                <button onClick={() => onPolicyClick('privacy')} className="hover:text-stone-300 transition-colors">Politique de confidentialité</button>
+                <span className="hidden md:inline">•</span>
+                <button onClick={() => onPolicyClick('coordonnees')} className="hover:text-stone-300 transition-colors">Coordonnées</button>
+                <span className="hidden md:inline">•</span>
+                <button onClick={() => onPolicyClick('terms')} className="hover:text-stone-300 transition-colors">Conditions d’utilisation</button>
+                <span className="hidden md:inline">•</span>
+                <button onClick={() => onPolicyClick('refund')} className="hover:text-stone-300 transition-colors">Politique de remboursement</button>
+                <span className="hidden md:inline">•</span>
+                <button onClick={() => onPolicyClick('shipping')} className="hover:text-stone-300 transition-colors">Politique d’expédition</button>
+                <span className="hidden md:inline">•</span>
+                <button onClick={() => onPolicyClick('terms')} className="hover:text-stone-300 transition-colors">Conditions générales de vente</button>
+                <span className="hidden md:inline">•</span>
+                <button onClick={() => onPolicyClick('mentions-legales')} className="hover:text-stone-300 transition-colors">Mentions légales</button>
+                <span className="hidden md:inline">•</span>
+                <button onClick={() => onPolicyClick('cookies')} className="hover:text-stone-300 transition-colors">Préférences en matière de cookies</button>
             </div>
         </div>
     </footer>
@@ -1501,24 +1857,37 @@ const App = () => {
   const [loading, setLoading] = useState(true);
   const [cartItems, setCartItems] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  // NOUVEAU : État pour le menu mobile
   const [isMenuOpen, setIsMenuOpen] = useState(false); 
-  const [selectedProduct, setSelectedProduct] = useState(null); // Modale de sélection de variante
-  const [selectedDescriptionProduct, setSelectedDescriptionProduct] = useState(null); // Modale de description détaillée
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedDescriptionProduct, setSelectedDescriptionProduct] = useState(null);
   const [selectedArticle, setSelectedArticle] = useState(null); 
   const [isArticleView, setIsArticleView] = useState(false);
-  const [selectedCollectionId, setSelectedCollectionId] = useState(null); // Filtre de la section produits
+  
+  // États Modales Spéciales
+  const [selectedPolicy, setSelectedPolicy] = useState(null);
+  const [isPolicyView, setIsPolicyView] = useState(false);
+  const [isCustomFurnitureOpen, setIsCustomFurnitureOpen] = useState(false); 
+  const [isCoachingOpen, setIsCoachingOpen] = useState(false); 
+  const [isContactOpen, setIsContactOpen] = useState(false); // NOUVEAU: Modale Contact
+  const [isPhilosophyOpen, setIsPhilosophyOpen] = useState(false); // NOUVEAU: Modale Philosophie
+
+  const [selectedCollectionId, setSelectedCollectionId] = useState(null);
   
   const logoText = data?.shop?.name || "LA MAISON";
   const collections = data?.collections?.edges || [];
   const blog = data?.blogs?.edges?.[0]?.node;
   const articles = blog?.articles?.edges || [];
   
-  // Utilisation des valeurs de DESIGN_CONFIG
   const { COLLECTION_ITEM_WIDTH, PRODUCT_ITEM_WIDTH, JOURNAL_ITEM_WIDTH, NOUVEAUTES_ITEM_WIDTH } = DESIGN_CONFIG;
 
+  useEffect(() => {
+    const link = document.createElement('link');
+    link.href = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap";
+    link.rel = "stylesheet";
+    document.head.appendChild(link);
+    return () => document.head.removeChild(link);
+  }, []);
   
-  // Identification des collections spéciales et produits associés
   const newArrivalsCollection = useMemo(() => collections.find(
     c => c.node.title.toLowerCase() === 'nouveautés' || c.node.handle === 'nouveautes'
   ), [collections]);
@@ -1527,33 +1896,26 @@ const App = () => {
     c => c.node.title.toLowerCase() !== 'nouveautés' && c.node.handle !== 'nouveautes'
   ), [collections]);
   
-  // --- Logique de dédoublonnage des produits pour "Nos Incontournables" (allProducts) ---
   const allProducts = useMemo(() => {
     const uniqueProductsMap = new Map();
-    // 1. Aplatir et itérer sur tous les produits des collections régulières
     const allProductsRaw = regularCollections.flatMap(c => c.node.products.edges).map(e => e.node);
 
-    // 2. Utiliser une Map pour s'assurer que chaque produit (ID) n'est ajouté qu'une seule fois
     allProductsRaw.forEach(product => {
         if (!uniqueProductsMap.has(product.id)) {
             uniqueProductsMap.set(product.id, product);
         }
     });
 
-    // 3. Retourner la liste des produits uniques
     return Array.from(uniqueProductsMap.values());
   }, [regularCollections]);
-  // --- Fin Logique de dédoublonnage ---
   
   const nouveautesProducts = useMemo(() => newArrivalsCollection
     ? newArrivalsCollection.node.products.edges.map(e => e.node)
     : allProducts.slice(0, 10) // Fallback
   , [newArrivalsCollection, allProducts]);
   
-  // LOGIQUE DE FILTRAGE PRINCIPALE DES PRODUITS POUR LA SECTION "LA BOUTIQUE"
   const filteredProducts = useMemo(() => {
     if (!selectedCollectionId || selectedCollectionId === 'all') {
-        // Retourne la liste dédoublonnée
         return allProducts;
     }
     
@@ -1563,15 +1925,12 @@ const App = () => {
       if (targetCollection.node.id === newArrivalsCollection?.node?.id) {
         return nouveautesProducts;
       }
-      
-      // Si une collection spécifique est sélectionnée, on affiche tous ses produits (doublons potentiels si on change de collection, mais correct pour une seule collection)
       return targetCollection.node.products.edges.map(e => e.node);
     }
     
     return allProducts; 
   }, [selectedCollectionId, allProducts, collections, newArrivalsCollection, nouveautesProducts]);
 
-  // --- LOGIQUE DE TÉLÉCHARGEMENT DE DONNÉES ---
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -1581,8 +1940,6 @@ const App = () => {
     };
     loadData();
   }, []);
-  
-  // --- LOGIQUE DU PANIER ET DES MODALES ---
   
   const handleOpenVariantSelector = useCallback((product) => {
     setSelectedProduct(product);
@@ -1601,7 +1958,6 @@ const App = () => {
   const handleCollectionFilter = useCallback((collectionId) => {
     setSelectedCollectionId(collectionId);
     
-    // Défilement vers la section des produits filtrés
     const productsSection = document.getElementById('products');
     if (productsSection) {
       window.scrollTo({
@@ -1654,20 +2010,68 @@ const App = () => {
   const handleRemoveFromCart = useCallback((variantId) => {
     setCartItems(prevItems => prevItems.filter(item => item.variantId !== variantId));
   }, []);
-
-  // --- LOGIQUE DE VUE/NAVIGATION ---
   
   const handleArticleClick = useCallback((article) => {
     setSelectedArticle(article);
     setIsArticleView(true);
+    setIsPolicyView(false); // Reset policy
   }, []);
   
   const handleBackToMain = useCallback(() => {
     setIsArticleView(false);
+    setIsPolicyView(false);
     setSelectedArticle(null);
+    setSelectedPolicy(null);
     setSelectedCollectionId(null); 
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
+
+  // --- LOGIQUE NAVIGATION POLITIQUES ---
+  const handlePolicyClick = useCallback((policyKey) => {
+      if (!data?.shop) return;
+      
+      let policyContent = null;
+      const shop = data.shop;
+      const pages = data.pages?.edges || [];
+
+      // Mapping des clés aux données Shopify
+      switch(policyKey) {
+          case 'privacy':
+              policyContent = shop.privacyPolicy;
+              break;
+          case 'refund':
+              policyContent = shop.refundPolicy;
+              break;
+          case 'shipping':
+              policyContent = shop.shippingPolicy;
+              break;
+          case 'terms':
+              policyContent = shop.termsOfService;
+              break;
+          case 'mentions-legales':
+              policyContent = pages.find(p => p.node.handle === 'mentions-legales' || p.node.handle === 'mentions')?.node 
+                              || pages.find(p => p.node.title.toLowerCase().includes('mentions'))?.node
+                              || { title: 'Mentions Légales', body: '<p>Veuillez créer une page "Mentions Légales" dans votre admin Shopify.</p>' };
+              break;
+          case 'coordonnees':
+               policyContent = pages.find(p => p.node.handle === 'contact' || p.node.handle === 'coordonnees' || p.node.handle === 'nous-contacter')?.node
+                              || { title: 'Coordonnées', body: `<p><strong>La Maison Ibizienne</strong><br/>Email: contact@lamaisonibizienne.com<br/>Veuillez ajouter une page "Contact" ou "Coordonnées" dans votre admin Shopify.</p>` };
+              break;
+          case 'cookies':
+               policyContent = pages.find(p => p.node.handle === 'cookies' || p.node.handle === 'politique-cookies' || p.node.handle === 'cookie-policy')?.node
+                              || { title: 'Politique de Cookies', body: `<p>Nous utilisons des cookies pour améliorer votre expérience. Veuillez créer une page "Politique de Cookies" dans votre admin Shopify pour afficher les détails ici.</p>` };
+              break;
+          default:
+              return;
+      }
+
+      if (policyContent) {
+          setSelectedPolicy(policyContent);
+          setIsPolicyView(true);
+          setIsArticleView(false);
+          window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+  }, [data]);
   
   const handleHeroScroll = () => {
     const collectionsSection = document.getElementById('nouveautes');
@@ -1696,24 +2100,47 @@ const App = () => {
   return (
     <div className="relative min-h-screen bg-finca-light font-sans text-stone-900">
       
-      {/* Navbar (toujours visible) */}
       <Navbar 
         logo={logoText} 
         cartCount={cartItems.length} 
         onOpenCart={() => setIsCartOpen(true)} 
         isArticleView={isArticleView}
+        isPolicyView={isPolicyView}
         onBack={handleBackToMain}
-        // NOUVEAU: Ajout du gestionnaire d'ouverture de menu mobile
         onOpenMenu={() => setIsMenuOpen(true)}
       />
 
-      {/* Menu Mobile Sidebar */}
       <MobileMenuSidebar 
           isMenuOpen={isMenuOpen}
           onClose={() => setIsMenuOpen(false)}
+          onContactClick={() => setIsContactOpen(true)}
+          onPhilosophyClick={() => setIsPhilosophyOpen(true)}
       />
       
-      {/* Modale de Description */}
+      {/* Modale Sur Mesure */}
+      <CustomFurnitureModal 
+          isOpen={isCustomFurnitureOpen} 
+          onClose={() => setIsCustomFurnitureOpen(false)} 
+      />
+
+      {/* Modale Coaching */}
+      <CoachingModal
+          isOpen={isCoachingOpen}
+          onClose={() => setIsCoachingOpen(false)}
+      />
+
+      {/* Modale Contact (NOUVEAU) */}
+      <ContactModal
+          isOpen={isContactOpen}
+          onClose={() => setIsContactOpen(false)}
+      />
+
+      {/* Modale Philosophie (NOUVEAU) */}
+      <PhilosophyModal
+          isOpen={isPhilosophyOpen}
+          onClose={() => setIsPhilosophyOpen(false)}
+      />
+
       {selectedDescriptionProduct && (
           <ProductDescriptionModal 
               product={selectedDescriptionProduct} 
@@ -1722,7 +2149,6 @@ const App = () => {
           />
       )}
 
-      {/* Sélecteur de Variante */}
       {selectedProduct && (
         <VariantSelector 
           product={selectedProduct} 
@@ -1731,7 +2157,6 @@ const App = () => {
         />
       )}
       
-      {/* Sidebar du Panier */}
       <CartSidebar 
         cartItems={cartItems} 
         isCartOpen={isCartOpen}
@@ -1740,26 +2165,22 @@ const App = () => {
         onRemove={handleRemoveFromCart}
         onCheckout={() => proceedToCheckout(cartItems)}
       />
-      {/* Overlay de fond pour les modales/sidebar */}
-      {/* MISE À JOUR: L'overlay doit couvrir les deux menus/modales actifs */}
-      {(isCartOpen || selectedProduct || selectedDescriptionProduct || isMenuOpen) && <div className="fixed inset-0 bg-finca-medium/95 lg:bg-finca-medium/95 backdrop-blur-sm z-40 transition-opacity" onClick={() => { setIsCartOpen(false); setSelectedProduct(null); setSelectedDescriptionProduct(null); setIsMenuOpen(false); }} />}
+      
+      {/* Overlay global */}
+      {(isCartOpen || selectedProduct || selectedDescriptionProduct || isMenuOpen || isCustomFurnitureOpen || isCoachingOpen || isContactOpen || isPhilosophyOpen) && <div className="fixed inset-0 bg-finca-medium/95 lg:bg-finca-medium/95 backdrop-blur-sm z-40 transition-opacity" onClick={() => { setIsCartOpen(false); setSelectedProduct(null); setSelectedDescriptionProduct(null); setIsMenuOpen(false); setIsCustomFurnitureOpen(false); setIsCoachingOpen(false); setIsContactOpen(false); setIsPhilosophyOpen(false); }} />}
       
       
-      {/* Rendu Conditionnel des Vues */}
+      {/* ROUTING SIMPLE (CONDITIONAL RENDERING) */}
       {isArticleView ? (
-        
-        // --- VUE ARTICLE DE BLOG ---
         <ArticleView article={selectedArticle} />
-        
+      ) : isPolicyView ? (
+        <LegalPageView page={selectedPolicy} />
       ) : (
         
-        // --- VUE PAGE PRINCIPALE (HOME) ---
         <main>
           
-          {/* Section 1: Héro (Vidéo) */}
           <HeroSection onScroll={handleHeroScroll} />
           
-          {/* Section 2: Nouveautés (Carrousel) */}
           <Carousel
             title={SITE_CONFIG.SECTIONS.NOUVEAUTES_TITLE}
             subtitle={SITE_CONFIG.SECTIONS.NOUVEAUTES_SUBTITLE}
@@ -1777,7 +2198,6 @@ const App = () => {
             ))}
           </Carousel>
           
-          {/* Section 3: Carousel des Collections (Nos Univers) */}
           <Carousel
             title={SITE_CONFIG.SECTIONS.UNIVERS}
             subtitle="Collections Exclusives"
@@ -1793,7 +2213,6 @@ const App = () => {
             ))}
           </Carousel>
           
-          {/* Section 4: Carousel des Produits (La Boutique) - Affiche tous ou les produits filtrés */}
           <div className="flex flex-col items-center justify-center min-h-[50vh] w-full bg-finca-light">
             <section id="products" className="w-full py-16">
                 <div className="max-w-[1800px] mx-auto px-6 md:px-12">
@@ -1840,16 +2259,14 @@ const App = () => {
             </section>
           </div>
           
-          {/* Section 5: Valeurs / Matériaux (Notre Philosophie) */}
           <ValuesSection />
           
-          {/* Section 6: Section sur Mesure (Bannière fluide avec rideau piloté par scroll) */}
-          <CustomFurnitureSection />
+          {/* Section Custom Furniture modifiée pour ouvrir la modale */}
+          <CustomFurnitureSection onOpen={() => setIsCustomFurnitureOpen(true)} />
           
-          {/* Section 7: Coaching / Conseils Déco (Notre Expertise) */}
-          <CoachingSection />
+          {/* Section Coaching modifiée pour ouvrir la modale */}
+          <CoachingSection onOpen={() => setIsCoachingOpen(true)} />
           
-          {/* Section 8: Le Journal (Articles de Blog) */}
           {articles.length > 0 && (
             <Carousel
               title={SITE_CONFIG.SECTIONS.JOURNAL_TITLE}
@@ -1867,8 +2284,12 @@ const App = () => {
             </Carousel>
           )}
 
-          {/* Footer */}
-          <Footer logo={logoText} />
+          <Footer 
+            logo={logoText} 
+            onPolicyClick={handlePolicyClick} 
+            onContactClick={() => setIsContactOpen(true)}
+            onPhilosophyClick={() => setIsPhilosophyOpen(true)}
+          />
           
         </main>
       )}
