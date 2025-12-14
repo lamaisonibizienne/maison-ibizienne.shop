@@ -1,9 +1,5 @@
 [build]
-  # Définir le répertoire de base (où se trouve package.json)
-  base = "la maison ibizienne boutique"
-
-  # Définir la commande de construction (npm run build)
+  # Nous supprimons la ligne "base" car c'est ce qui pose problème.
+  # Netlify devrait maintenant chercher à la racine (dossier "/").
   command = "npm run build"
-
-  # Définir le répertoire de publication (le dossier créé par la commande, qui est DANS le répertoire de base)
   publish = "dist"
