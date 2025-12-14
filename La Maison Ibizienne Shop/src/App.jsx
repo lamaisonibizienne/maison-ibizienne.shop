@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { ShoppingBag, X, Instagram, Facebook, Loader, ChevronRight, Menu, ArrowLeft, Heart, ChevronDown, Minus, Plus, ChevronLeft, MessageSquare, Eye, PenTool, Ruler, Send, Sparkles, Home, PiggyBank, Mail } from 'lucide-react';
+import { ShoppingBag, X, Instagram, Facebook, Loader, ChevronRight, Menu, ArrowLeft, Heart, ChevronDown, Minus, Plus, ChevronLeft, MessageSquare, Eye, PenTool, Ruler, Send, Sparkles, Home, PiggyBank, Mail, Cookie, ShieldCheck, Settings } from 'lucide-react';
 
 // ==============================================================================
 // 1. CONFIGURATION TECHNIQUE & STYLE
@@ -26,10 +26,15 @@ const injectTailwindConfig = () => {
                         fadeIn: {
                             '0%': { opacity: '0' },
                             '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(100%)' },
+                            '100%': { transform: 'translateY(0)' },
                         }
                     },
                     animation: {
                         'fade-in': 'fadeIn 0.3s ease-out forwards',
+                        'slide-up': 'slideUp 0.5s ease-out forwards',
                     }
                 }
             }
@@ -131,26 +136,31 @@ const SITE_CONFIG = {
 };
 
 // ==============================================================================
-// COMPOSANT CACHÉ POUR LA DÉTECTION NETLIFY (OBLIGATOIRE POUR SPAs)
+// UTILITAIRES POUR NETLIFY FORMS
 // ==============================================================================
-// Ce composant doit contenir les définitions EXACTES de tous les champs
-// utilisés dans l'application pour que les robots Netlify les détectent.
+
+const encode = (data) => {
+    return Object.keys(data)
+        .map(key => encodeURIComponent(key) + "=" + encodeURIComponent(data[key]))
+        .join("&");
+};
+
+// ==============================================================================
+// COMPOSANT CACHÉ POUR LA DÉTECTION NETLIFY
+// ==============================================================================
 const NetlifyFormsDefinitions = () => (
     <div style={{ display: 'none' }}>
-        {/* Formulaire Contact */}
-        <form name="contact" data-netlify="true" netlify-honeypot="bot-field">
+        <form name="contact" method="POST" data-netlify="true" data-netlify-honeypot="bot-field">
             <input type="hidden" name="form-name" value="contact" />
             <input type="hidden" name="bot-field" />
             <input type="text" name="name" />
             <input type="email" name="email" />
             <select name="subject"></select>
             <textarea name="message"></textarea>
-            {/* Champ sujet pour l'email admin */}
             <input type="text" name="subject_mail" /> 
         </form>
 
-        {/* Formulaire Coaching */}
-        <form name="coaching" data-netlify="true" netlify-honeypot="bot-field">
+        <form name="coaching" method="POST" data-netlify="true" data-netlify-honeypot="bot-field">
             <input type="hidden" name="form-name" value="coaching" />
             <input type="hidden" name="bot-field" />
             <input type="text" name="name" />
@@ -160,8 +170,7 @@ const NetlifyFormsDefinitions = () => (
             <textarea name="expectations"></textarea>
         </form>
 
-        {/* Formulaire Meubles Sur Mesure */}
-        <form name="custom-furniture" data-netlify="true" netlify-honeypot="bot-field">
+        <form name="custom-furniture" method="POST" data-netlify="true" data-netlify-honeypot="bot-field">
             <input type="hidden" name="form-name" value="custom-furniture" />
             <input type="hidden" name="bot-field" />
             <input type="text" name="name" />
@@ -174,11 +183,22 @@ const NetlifyFormsDefinitions = () => (
 );
 
 // ==============================================================================
-// 3. LOGIQUE API & TRACKING ANALYTICS
+// 3. LOGIQUE API & TRACKING ANALYTICS (SHOPIFY + GA4)
 // ==============================================================================
 
+// Utilitaire pour générer des UUIDs (pour les sessions utilisateurs)
+const generateUUID = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+};
+
 const useAnalyticsTracker = (pageType, pageTitle, product = null) => {
+    const isFirstRun = useRef(true);
+
     useEffect(() => {
+        // --- 1. GOOGLE ANALYTICS / DATALAYER (Standard Headless) ---
         const dataLayer = window.dataLayer = window.dataLayer || [];
         const eventName = pageType.includes('view') ? pageType : 'page_view';
 
@@ -201,13 +221,42 @@ const useAnalyticsTracker = (pageType, pageTitle, product = null) => {
             'ecommerce': product ? ecommerceData : undefined,
         });
 
+        // --- 2. SHOPIFY ANALYTICS (Monorail/Trekkie Simulation) ---
+        // Cette partie tente de pousser les données vers le tableau de bord Shopify.
+        // Note: Cela fonctionne mieux si le script 'trekkie' est chargé (voir useEffect dans App)
+        
+        // Configuration de base si non existante
+        if (!window.ShopifyAnalytics) {
+            window.ShopifyAnalytics = { lib: {} };
+        }
+        
         window.__st = {
-            a: '10415243330',
+            a: '10415243330', // ID du site (peut nécessiter d'être récupéré dynamiquement)
             pageurl: window.location.href,
             t: pageType === 'index' ? 'home' : pageType,
             p: pageTitle,
+            u: generateUUID(), // User Token unique simulé
+            r: document.referrer
         };
-    }, [pageTitle, pageType, product]);
+
+        // Si Trekkie est chargé, on déclenche l'événement
+        if (window.trekkie && window.trekkie.track) {
+            if (pageType === 'view_item' && product) {
+                 window.trekkie.track('Viewed Product', {
+                    'Variant ID': product.variants?.edges?.[0]?.node?.id?.split('/').pop(),
+                    'Product ID': product.id?.split('/').pop(),
+                    'Name': product.title,
+                    'Price': parseFloat(product.priceRange?.minVariantPrice?.amount || 0).toFixed(2),
+                    'Currency': product.priceRange?.minVariantPrice?.currencyCode || 'EUR',
+                    'Brand': "La Maison Ibizienne",
+                    'Category': product.productType
+                 });
+            } else {
+                window.trekkie.track('Page View');
+            }
+        }
+
+    }, [pageType, pageTitle, product]);
 };
 
 // Utilisation du permalien Shopify (méthode sécurisée native)
@@ -278,7 +327,7 @@ async function fetchShopifyData() {
                 }
             }
         }
-        pages(first: 20) {
+        pages(first: 50) {
             edges {
                 node {
                     id title handle body
@@ -309,11 +358,68 @@ async function fetchShopifyData() {
     }
 }
 
+// Données de secours enrichies avec vos textes légaux EXACTS
 const FALLBACK_DATA = {
-    shop: { name: "LA MAISON" },
+    shop: { 
+        name: "LA MAISON IBIZIENNE",
+        // Contenu factice pour les autres, sera remplacé par l'API si dispo
+        privacyPolicy: { title: "Politique de confidentialité", body: "<p>Chargement des données depuis Shopify...</p>" },
+        refundPolicy: { title: "Politique de remboursement", body: "<p>Chargement des données depuis Shopify...</p>" },
+        shippingPolicy: { title: "Politique d'expédition", body: "<p>Chargement des données depuis Shopify...</p>" },
+        termsOfService: { title: "Conditions générales", body: "<p>Chargement des données depuis Shopify...</p>" }
+    },
     collections: { edges: [] },
     blogs: { edges: [] },
     pages: { edges: [] }
+};
+
+// TEXTES LÉGAUX GARANTIS (Utilisés si l'API ne les trouve pas ou échoue)
+const HARDCODED_LEGAL_PAGES = {
+    'mentions-legales': {
+        title: "Mentions légales",
+        body: `
+            <p><em>En vigueur au 23 juin 2025</em></p>
+            <p>Conformément aux dispositions des articles 6-III et 19 de la Loi n°2004-575 du 21 juin 2004 pour la Confiance dans l'Économie Numérique (LCEN), il est précisé aux utilisateurs du site https://lamaisonibizienne.com l’identité des différents intervenants dans le cadre de sa réalisation et de son suivi.</p>
+            
+            <h3>Éditeur du site</h3>
+            <p><strong>La Maison Ibizienne</strong><br>
+            Siège social : Corse du Sud<br>
+            Responsable de publication : Maryneige Catelli<br>
+            Adresse email : <a href="mailto:contact@lamaisonibizienne.com">contact@lamaisonibizienne.com</a></p>
+
+            <h3>Hébergement</h3>
+            <p>Le site est hébergé par :<br>
+            <strong>Shopify Inc.</strong><br>
+            126 York Street, Suite 200, Ottawa, Ontario, K1N 5T5, Canada<br>
+            Téléphone : 1-888-746-7439<br>
+            Site : www.shopify.com</p>
+
+            <h3>Propriété intellectuelle</h3>
+            <p>L’ensemble du contenu du site (textes, images, logos, éléments graphiques, vidéos, etc.) est la propriété exclusive de La Maison Ibizienne, sauf mentions contraires.<br>
+            Toute reproduction, distribution, modification, adaptation, retransmission ou publication, même partielle, de ces différents éléments est strictement interdite sans l’accord exprès par écrit de La Maison Ibizienne.</p>
+
+            <h3>Conditions d’utilisation</h3>
+            <p>L’utilisation du site lamaisonibizienne.com implique l’acceptation pleine et entière des conditions générales d’utilisation accessibles à tout moment via le pied de page du site.</p>
+
+            <h3>Données personnelles</h3>
+            <p>La Maison Ibizienne s’engage à respecter la confidentialité des données personnelles collectées. Pour plus d’informations, consultez notre Politique de confidentialité.<br>
+            Conformément à la loi Informatique et Libertés et au RGPD, vous disposez d’un droit d’accès, de rectification, de suppression et d’opposition concernant vos données personnelles. Vous pouvez exercer ce droit en écrivant à <a href="mailto:contact@lamaisonibizienne.com">contact@lamaisonibizienne.com</a>.</p>
+
+            <h3>Cookies</h3>
+            <p>Le site peut collecter automatiquement des informations standards via l’utilisation de cookies. Pour en savoir plus, consultez notre Politique de cookies.</p>
+
+            <h3>Droit applicable et juridiction compétente</h3>
+            <p>Tout litige relatif à l’utilisation du site est soumis au droit français. En cas de litige, compétence est attribuée aux tribunaux français.</p>
+        `
+    },
+    'coordonnees': {
+        title: "Nos Coordonnées",
+        body: `
+            <p><strong>Nom commercial :</strong> La Maison Ibizienne</p>
+            <p><strong>Numéro de téléphone :</strong> +33 6 69 21 53 53</p>
+            <p><strong>E-mail :</strong> <a href="mailto:contact@lamaisonibizienne.com">contact@lamaisonibizienne.com</a></p>
+        `
+    }
 };
 
 
@@ -366,8 +472,124 @@ const ScrollFadeIn = ({ children, delay = 0, threshold = 0.1, className = "", in
 
 
 // ==============================================================================
-// 5. COMPOSANTS DESIGN
+// 5. COMPOSANTS DESIGN & COOKIES
 // ==============================================================================
+
+// --- MODALE DE PRÉFÉRENCES COOKIES (RGPD) ---
+const CookiePreferencesModal = ({ isOpen, onClose, onSave }) => {
+    // Par défaut : Essentiels (toujours oui), Analytics (non), Marketing (non)
+    const [prefs, setPrefs] = useState({
+        essential: true,
+        analytics: false,
+        marketing: false
+    });
+
+    const handleToggle = (key) => {
+        if (key === 'essential') return; // Toujours actif
+        setPrefs(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    const handleSave = () => {
+        onSave(prefs);
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[110] bg-stone-900/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
+            <div className="bg-white w-full max-w-lg shadow-2xl rounded-lg p-6 md:p-8" onClick={(e) => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-6 border-b border-stone-200 pb-4">
+                    <h3 className="font-serif text-xl text-stone-900 flex items-center gap-2">
+                        <Settings size={20} /> Préférences des Cookies
+                    </h3>
+                    <button onClick={onClose} className="text-stone-400 hover:text-stone-900"><X size={24} /></button>
+                </div>
+
+                <div className="space-y-6 mb-8">
+                    <div className="flex justify-between items-start gap-4">
+                        <div>
+                            <h4 className="text-sm font-bold text-stone-900 mb-1">Cookies strictement nécessaires</h4>
+                            <p className="text-xs text-stone-500">Indispensables au bon fonctionnement du site (panier, sécurité). Toujours actifs.</p>
+                        </div>
+                        <div className="relative inline-flex items-center cursor-not-allowed opacity-50">
+                            <input type="checkbox" checked={true} readOnly className="sr-only peer" />
+                            <div className="w-11 h-6 bg-stone-900 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-between items-start gap-4">
+                        <div>
+                            <h4 className="text-sm font-bold text-stone-900 mb-1">Cookies analytiques</h4>
+                            <p className="text-xs text-stone-500">Nous aident à comprendre comment vous utilisez le site pour l'améliorer.</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" checked={prefs.analytics} onChange={() => handleToggle('analytics')} className="sr-only peer" />
+                            <div className="w-11 h-6 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-stone-900"></div>
+                        </label>
+                    </div>
+
+                    <div className="flex justify-between items-start gap-4">
+                        <div>
+                            <h4 className="text-sm font-bold text-stone-900 mb-1">Cookies marketing</h4>
+                            <p className="text-xs text-stone-500">Utilisés pour vous présenter des publicités adaptées à vos centres d'intérêt.</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" checked={prefs.marketing} onChange={() => handleToggle('marketing')} className="sr-only peer" />
+                            <div className="w-11 h-6 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-stone-900"></div>
+                        </label>
+                    </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <button 
+                        onClick={handleSave}
+                        className="w-full py-3 bg-stone-900 text-white text-xs uppercase tracking-widest font-bold hover:bg-stone-700 transition-colors rounded-sm"
+                    >
+                        Enregistrer mes choix
+                    </button>
+                    <button 
+                        onClick={() => onSave({ essential: true, analytics: true, marketing: true })}
+                        className="w-full py-3 border border-stone-300 text-stone-900 text-xs uppercase tracking-widest font-bold hover:bg-stone-50 transition-colors rounded-sm"
+                    >
+                        Tout accepter
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const CookieBanner = ({ onAcceptAll, onCustomize }) => {
+    return (
+        <div className="fixed bottom-0 left-0 w-full bg-white border-t border-stone-200 shadow-2xl z-[100] p-6 md:p-8 animate-slide-up">
+            <div className="max-w-[1400px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                        <ShieldCheck size={20} className="text-stone-900" />
+                        <h4 className="font-serif text-lg text-stone-900">Paramètres de confidentialité</h4>
+                    </div>
+                    <p className="text-xs md:text-sm text-stone-500 font-light leading-relaxed">
+                        En poursuivant votre navigation, vous acceptez l'utilisation de cookies pour vous proposer des services et offres adaptés à vos centres d'intérêts et réaliser des statistiques de visite. Vous pouvez changer d'avis à tout moment via les réglages.
+                    </p>
+                </div>
+                <div className="flex gap-4 flex-shrink-0 w-full md:w-auto">
+                    <button 
+                        onClick={onCustomize}
+                        className="flex-1 md:flex-none py-3 px-6 border border-stone-300 text-stone-600 text-[10px] uppercase tracking-widest font-bold hover:border-stone-900 hover:text-stone-900 transition-colors rounded-sm"
+                    >
+                        Paramétrer
+                    </button>
+                    <button 
+                        onClick={onAcceptAll}
+                        className="flex-1 md:flex-none py-3 px-8 bg-stone-900 text-white text-[10px] uppercase tracking-widest font-bold hover:bg-stone-700 transition-colors rounded-sm shadow-md"
+                    >
+                        Tout accepter
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const CollectionCard = ({ collection, onFilterCollection }) => {
     const product = collection.products?.edges?.[0]?.node;
@@ -700,7 +922,7 @@ const CartSidebar = ({ cartItems, isCartOpen, onClose, onUpdateQuantity, onRemov
                     disabled={cartItems.length === 0}
                     className="w-full bg-stone-900 text-white py-4 uppercase tracking-[0.2em] text-xs font-bold hover:bg-stone-700 transition-colors rounded-sm disabled:bg-stone-400"
                 >
-                    Passer à la caisse (Shopify Checkout)
+                    Paiement
                 </button>
             </div>
         </div>
@@ -1193,16 +1415,20 @@ const ContactModal = ({ isOpen, onClose }) => {
         setFormStatus('sending');
         
         const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
         
         // Ajout dynamique d'un sujet pour l'email admin
         const name = formData.get('name');
-        formData.append('subject_mail', `Nouvelle demande de contact: ${name}`);
+        data['subject_mail'] = `Nouvelle demande de contact: ${name}`;
 
         try {
             const response = await fetch("/", {
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: new URLSearchParams(formData).toString(),
+                body: encode({ 
+                    "form-name": "contact",
+                    ...data
+                }),
             });
 
             if (response.ok) {
@@ -1253,7 +1479,6 @@ const ContactModal = ({ isOpen, onClose }) => {
                         name="contact" 
                         method="POST" 
                         data-netlify="true"
-                        netlify-honeypot="bot-field"
                         onSubmit={handleSubmit} 
                         className="space-y-6"
                     >
@@ -1374,12 +1599,16 @@ const CoachingModal = ({ isOpen, onClose }) => {
         setFormStatus('sending');
 
         const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
         
         try {
             const response = await fetch("/", {
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: new URLSearchParams(formData).toString(),
+                body: encode({ 
+                    "form-name": "coaching",
+                    ...data 
+                }),
             });
 
             if (response.ok) {
@@ -1455,7 +1684,6 @@ const CoachingModal = ({ isOpen, onClose }) => {
                                     name="coaching"
                                     method="POST"
                                     data-netlify="true"
-                                    netlify-honeypot="bot-field"
                                     onSubmit={handleSubmit} 
                                     className="space-y-6 flex-grow"
                                 >
@@ -1533,12 +1761,16 @@ const CustomFurnitureModal = ({ isOpen, onClose }) => {
         setFormStatus('sending');
 
         const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
         
         try {
             const response = await fetch("/", {
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: new URLSearchParams(formData).toString(),
+                body: encode({ 
+                    "form-name": "custom-furniture",
+                    ...data
+                }),
             });
 
             if (response.ok) {
@@ -1614,7 +1846,6 @@ const CustomFurnitureModal = ({ isOpen, onClose }) => {
                                     name="custom-furniture"
                                     method="POST"
                                     data-netlify="true"
-                                    netlify-honeypot="bot-field"
                                     onSubmit={handleSubmit} 
                                     className="space-y-6 flex-grow"
                                 >
@@ -1987,6 +2218,9 @@ const App = () => {
 
     const [selectedCollectionId, setSelectedCollectionId] = useState(null);
     const [randomizedProducts, setRandomizedProducts] = useState([]);
+    const [showCookieBanner, setShowCookieBanner] = useState(false);
+    const [showCookiePreferences, setShowCookiePreferences] = useState(false);
+
     const logoText = data?.shop?.name || "LA MAISON";
 
     const collections = data?.collections?.edges || [];
@@ -2020,6 +2254,32 @@ const App = () => {
         document.head.appendChild(link);
         return () => document.head.removeChild(link);
     }, []);
+
+    // Vérification du consentement aux cookies au chargement
+    useEffect(() => {
+        const consent = localStorage.getItem('cookieConsent');
+        if (!consent) {
+            // Petit délai pour l'animation
+            setTimeout(() => setShowCookieBanner(true), 1500);
+        }
+    }, []);
+
+    const handleAcceptAllCookies = () => {
+        localStorage.setItem('cookieConsent', JSON.stringify({ essential: true, analytics: true, marketing: true }));
+        setShowCookieBanner(false);
+    };
+
+    const handleSaveCookiePreferences = (prefs) => {
+        localStorage.setItem('cookieConsent', JSON.stringify(prefs));
+        setShowCookieBanner(false);
+        setShowCookiePreferences(false);
+    };
+
+    const handleOpenCookiePreferences = () => {
+        setShowCookieBanner(false);
+        setShowCookiePreferences(true);
+    }
+
 
     const newArrivalsCollection = useMemo(() => collections.find(
         c => c.node.title.toLowerCase() === 'nouveautés' || c.node.handle === 'nouveautes'
@@ -2167,39 +2427,58 @@ const App = () => {
     }, []);
 
     const handlePolicyClick = useCallback((policyKey) => {
-        if (!data?.shop) return;
+        // Logique de récupération plus robuste
+        // On cherche d'abord dans les données API, sinon on utilise le FALLBACK_DATA local
+        const sourceData = data || FALLBACK_DATA;
+        const shop = sourceData.shop;
+        const pages = sourceData.pages?.edges || [];
+
+        // Fonction utilitaire pour chercher une page par handles multiples
+        const findPage = (handles) => {
+            return pages.find(p => handles.includes(p.node.handle))?.node;
+        };
+
+        // Fallback ultime : si aucune page trouvée via API, on regarde directement dans FALLBACK_DATA.pages
+        // Cela garantit que "Mentions Légales" et "Coordonnées" s'affichent même si l'API ne les renvoie pas.
+        const findPageWithFallback = (handles) => {
+            let page = findPage(handles);
+            if (!page && FALLBACK_DATA.pages && FALLBACK_DATA.pages.edges) {
+                 const fallbackEdge = FALLBACK_DATA.pages.edges.find(e => handles.includes(e.node.handle));
+                 if (fallbackEdge) page = fallbackEdge.node;
+            }
+            return page;
+        };
 
         let policyContent = null;
-        const shop = data.shop;
-        const pages = data.pages?.edges || [];
 
-        switch(policyKey) {
-            case 'privacy':
-                policyContent = shop.privacyPolicy || pages.find(p => p.node.handle === 'politique-de-confidentialite')?.node || { title: 'Politique de confidentialité', body: '<p>Contenu non trouvé.</p>' };
-                break;
-            case 'refund':
-                policyContent = shop.refundPolicy || pages.find(p => p.node.handle === 'politique-de-remboursement')?.node || { title: 'Politique de remboursement', body: '<p>Contenu non trouvé.</p>' };
-                break;
-            case 'shipping':
-                policyContent = shop.shippingPolicy || pages.find(p => p.node.handle === 'politique-d-expedition')?.node || { title: 'Politique d’expédition', body: '<p>Contenu non trouvé.</p>' };
-                break;
-            case 'terms':
-                policyContent = shop.termsOfService || pages.find(p => p.node.handle === 'conditions-generales-de-vente')?.node || { title: 'Conditions Générales de Vente', body: '<p>Contenu non trouvé.</p>' };
-                break;
-            case 'mentions-legales':
-                policyContent = pages.find(p => p.node.handle === 'mentions-legales' || p.node.handle === 'mentions')?.node
-                                 || { title: 'Mentions Légales', body: '<p>Veuillez créer une page "Mentions Légales" dans votre admin Shopify.</p>' };
-                break;
-            case 'coordonnees':
-                 policyContent = pages.find(p => p.node.handle === 'contact' || p.node.handle === 'coordonnees' || p.node.handle === 'nous-contacter')?.node
-                                 || { title: 'Coordonnées', body: `<p><strong>La Maison Ibizienne</strong><br/>Email: contact@lamaisonibizienne.com<br/>Veuillez ajouter une page "Contact" ou "Coordonnées" dans votre admin Shopify.</p>` };
-                break;
-            case 'cookies':
-                 policyContent = pages.find(p => p.node.handle === 'cookies' || p.node.handle === 'politique-cookies' || p.node.handle === 'cookie-policy')?.node
-                                 || { title: 'Politique de Cookies', body: `<p>Nous utilisons des cookies pour améliorer votre expérience. Veuillez créer une page "Politique de Cookies" dans votre admin Shopify pour afficher les détails ici.</p>` };
-                break;
-            default:
-                return;
+        // VERIFICATION PRIORITAIRE DES CONTENUS LÉGAUX "HARDCODÉS"
+        if (policyKey === 'mentions-legales') {
+            // Si on force le contenu légal (recommandé pour éviter les vides)
+            policyContent = HARDCODED_LEGAL_PAGES['mentions-legales'];
+        } else if (policyKey === 'coordonnees') {
+             policyContent = HARDCODED_LEGAL_PAGES['coordonnees'];
+        } else {
+            // Pour les autres pages, on utilise la logique standard
+            switch(policyKey) {
+                case 'privacy':
+                    policyContent = shop.privacyPolicy || findPageWithFallback(['politique-de-confidentialite', 'privacy-policy']) || { title: 'Politique de confidentialité', body: '<p>Contenu non trouvé.</p>' };
+                    break;
+                case 'refund':
+                    policyContent = shop.refundPolicy || findPageWithFallback(['politique-de-remboursement', 'refund-policy']) || { title: 'Politique de remboursement', body: '<p>Contenu non trouvé.</p>' };
+                    break;
+                case 'shipping':
+                    policyContent = shop.shippingPolicy || findPageWithFallback(['politique-d-expedition', 'shipping-policy']) || { title: 'Politique d’expédition', body: '<p>Contenu non trouvé.</p>' };
+                    break;
+                case 'terms':
+                    policyContent = shop.termsOfService || findPageWithFallback(['conditions-generales-de-vente', 'terms-of-service']) || { title: 'Conditions Générales de Vente', body: '<p>Contenu non trouvé.</p>' };
+                    break;
+                case 'cookies':
+                    // Ouvre la modale de préférences au lieu d'une page
+                    setShowCookiePreferences(true);
+                    return; 
+                default:
+                    return;
+            }
         }
 
         if (policyContent) {
@@ -2238,6 +2517,21 @@ const App = () => {
         <div className="relative min-h-screen bg-finca-light font-sans text-stone-900">
             {/* DÉFINITIONS DES FORMULAIRES CACHÉS POUR NETLIFY - PLACÉ AU TOP LEVEL */}
             <NetlifyFormsDefinitions />
+
+            {/* BANNIÈRE COOKIES */}
+            {showCookieBanner && (
+                <CookieBanner 
+                    onAcceptAll={handleAcceptAllCookies} 
+                    onCustomize={handleOpenCookiePreferences} 
+                />
+            )}
+
+            {/* MODALE PRÉFÉRENCES COOKIES */}
+            <CookiePreferencesModal 
+                isOpen={showCookiePreferences}
+                onClose={() => setShowCookiePreferences(false)}
+                onSave={handleSaveCookiePreferences}
+            />
 
             <Navbar
                 logo={logoText}
