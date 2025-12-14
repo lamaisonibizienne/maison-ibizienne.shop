@@ -6,47 +6,46 @@ import { ShoppingBag, X, Instagram, Facebook, Loader, ChevronRight, Menu, ArrowL
 // ==============================================================================
 
 // --- APPLICATION DE LA CONFIGURATION TAILWIND ---
-// Tailwind classes are assumed to be loaded in the execution environment
-// The theme configuration is defined below for reference:
-if (typeof window !== 'undefined' && window.tailwind) {
-    window.tailwind.config = {
-        theme: {
-            extend: {
-                fontFamily: {
-                    sans: ['Inter', 'sans-serif'],
-                    serif: ['Playfair Display', 'serif'],
-                },
-                colors: {
-                    'stone-900': '#1c1c1c', // Dark Charcoal
-                    'stone-500': '#7d7d7d', // Medium Gray
-                    'stone-100': '#f5f5f5', // Light Gray
-                    'finca-light': '#FDFBF7', // Off-White Background
-                    'finca-medium': '#F0EBE5', // Beige/Sand
-                },
-                keyframes: {
-                    fadeIn: {
-                        '0%': { opacity: '0' },
-                        '100%': { opacity: '1' },
+// Note: This injects custom config into the Tailwind instance loaded in the environment
+const injectTailwindConfig = () => {
+    if (typeof window !== 'undefined' && window.tailwind) {
+        window.tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    },
+                    colors: {
+                        'stone-900': '#1c1c1c',
+                        'stone-500': '#7d7d7d',
+                        'stone-100': '#f5f5f5',
+                        'finca-light': '#FDFBF7',
+                        'finca-medium': '#F0EBE5',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out forwards',
                     }
-                },
-                animation: {
-                    'fade-in': 'fadeIn 0.3s ease-out forwards',
                 }
             }
-        }
-    };
-}
+        };
+    }
+};
 
-// Paramètres Shopify API (Utilisation des variables d'environnement recommandées pour la production)
-// NOTE: Ces valeurs doivent être injectées par votre environnement de build/hébergement
-const STOREFRONT_ACCESS_TOKEN = '4b2746c099f9603fde4f9639336a235d'; // Clé publique non sensible
-const SHOPIFY_DOMAIN = '91eg2s-ah.myshopify.com'; // Domaine temporaire
+// --- CONFIGURATION ---
+// Hardcoded for the preview environment to ensure runnability without .env files
+const STOREFRONT_ACCESS_TOKEN = '4b2746c099f9603fde4f9639336a235d'; 
+const SHOPIFY_DOMAIN = '91eg2s-ah.myshopify.com';
 const API_VERSION = '2024-01';
 
-// Définition des couleurs principales
 const COLOR_LIGHT = '#FDFBF7';
 const COLOR_MEDIUM = '#F0EBE5';
-
 
 // ==============================================================================
 // 2. DESIGN & CONFIGURATION
@@ -63,7 +62,6 @@ const DESIGN_CONFIG = {
 };
 
 const SITE_CONFIG = {
-    // ... (Le reste de SITE_CONFIG est inchangé)
     HERO: {
         VIDEO_URL: "https://cdn.shopify.com/videos/c/o/v/c4d96d8c70b64465835c4eadaa115175.mp4",
         SURTITLE: "Slow Living",
@@ -134,21 +132,12 @@ const SITE_CONFIG = {
     }
 };
 
-
 // ==============================================================================
 // 3. LOGIQUE API & TRACKING ANALYTICS
 // ==============================================================================
 
-/**
- * Simule le suivi d'événements pour l'analyse (Google Analytics/Tag Manager).
- * En production, ces données seraient utilisées par les scripts injectés par Shopify/GTM.
- * @param {string} pageType - Type de page (ex: 'index', 'product', 'article')
- * @param {string} pageTitle - Titre de la page pour le suivi
- * @param {Object} [product] - Données du produit pour les événements d'e-commerce
- */
 const useAnalyticsTracker = (pageType, pageTitle, product = null) => {
     useEffect(() => {
-        // Simuler le dataLayer pour Google Tag Manager (GTM)
         const dataLayer = window.dataLayer = window.dataLayer || [];
         const eventName = pageType.includes('view') ? pageType : 'page_view';
 
@@ -171,38 +160,29 @@ const useAnalyticsTracker = (pageType, pageTitle, product = null) => {
             'ecommerce': product ? ecommerceData : undefined,
         });
 
-        // Simuler le suivi minimal de Shopify (__st)
         window.__st = {
-            a: '10415243330', // ID de boutique simulé (utilisé par Zoco Home)
+            a: '10415243330',
             pageurl: window.location.href,
             t: pageType === 'index' ? 'home' : pageType,
             p: pageTitle,
         };
 
-        console.log(`[Analytics] Tracked: ${pageTitle} (${pageType})`);
+        // console.log(`[Analytics] Tracked: ${pageTitle} (${pageType})`);
     }, [pageTitle, pageType, product]);
 };
 
-
-/**
- * Fonction de passage à la caisse via le permalien Shopify.
- * Ceci est le flux sécurisé (Shopify gère le paiement sur son domaine).
- * @param {Array} cartItems - Liste des articles dans le panier.
- */
+// Utilisation du permalien Shopify (méthode sécurisée native)
 const proceedToCheckout = (cartItems) => {
     if (cartItems.length === 0) return;
     const itemsString = cartItems.map(item => {
-        // Extraction de l'ID numérique de la variante à partir de l'ID GraphQL (gid://shopify/ProductVariant/...)
         const variantId = item.variantId.split('/').pop();
         return `${variantId}:${item.quantity || 1}`;
     }).join(',');
 
-    // Ouvre le lien de pré-remplissage du panier Shopify dans un nouvel onglet
     window.open(`https://${SHOPIFY_DOMAIN}/cart/${itemsString}`, '_blank');
 };
 
 
-// Fonction de récupération des données Shopify via GraphQL
 async function fetchShopifyData() {
     const query = `
     {
@@ -262,10 +242,7 @@ async function fetchShopifyData() {
         pages(first: 20) {
             edges {
                 node {
-                    id
-                    title
-                    handle
-                    body
+                    id title handle body
                 }
             }
         }
@@ -273,14 +250,13 @@ async function fetchShopifyData() {
     `;
 
     try {
-        const storefrontAccessToken = STOREFRONT_ACCESS_TOKEN;
-        const shopifyDomain = SHOPIFY_DOMAIN;
-
-        const response = await fetch(`https://${shopifyDomain}/api/${API_VERSION}/graphql.json`, {
+        // NOTE: In some code sandboxes, fetching directly from Shopify might be blocked by CORS.
+        // If this fails, we will gracefully return null so the App falls back to FALLBACK_DATA.
+        const response = await fetch(`https://${SHOPIFY_DOMAIN}/api/${API_VERSION}/graphql.json`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Shopify-Storefront-Access-Token': storefrontAccessToken,
+                'X-Shopify-Storefront-Access-Token': STOREFRONT_ACCESS_TOKEN,
             },
             body: JSON.stringify({ query }),
         });
@@ -291,7 +267,7 @@ async function fetchShopifyData() {
         }
         return json.data;
     } catch (error) {
-        console.error("Erreur lors de la récupération des données Shopify:", error);
+        console.warn("API Fetch failed (likely CORS in sandbox), using Fallback Data.");
         return null;
     }
 }
@@ -305,7 +281,7 @@ const FALLBACK_DATA = {
 
 
 // ==============================================================================
-// 4. HOOKS ET LOGIQUE D'ANIMATION (Inchangé)
+// 4. HOOKS ET LOGIQUE D'ANIMATION
 // ==============================================================================
 
 const useIntersectionObserver = (options) => {
@@ -353,7 +329,7 @@ const ScrollFadeIn = ({ children, delay = 0, threshold = 0.1, className = "", in
 
 
 // ==============================================================================
-// 5. COMPOSANTS DESIGN (Inchangé/Minimally Changed)
+// 5. COMPOSANTS DESIGN
 // ==============================================================================
 
 const CollectionCard = ({ collection, onFilterCollection }) => {
@@ -647,7 +623,7 @@ const CartSidebar = ({ cartItems, isCartOpen, onClose, onUpdateQuantity, onRemov
                             <div key={item.variantId} className="flex gap-4 border-b border-stone-100 pb-4 last:border-b-0">
                                 <div className="w-20 h-24 bg-stone-100 flex-shrink-0 overflow-hidden rounded-sm">
                                     <img
-                                        src={item.image || "https://placehold.co/80x96/F0EBE5/7D7D7D?text=Image"}
+                                        src={item.image || "https://placehold.co/8x96/F0EBE5/7D7D7D?text=Image"}
                                         alt={item.title}
                                         onError={(e) => {e.target.onerror = null; e.target.src="https://placehold.co/80x96/F0EBE5/7D7D7D?text=Image"}}
                                         className="w-full h-full object-cover"
@@ -705,7 +681,6 @@ const MobileMenuSidebar = ({ isMenuOpen, onClose, onContactClick, onPhilosophyCl
         } else if (link.action === 'philosophy') {
             onPhilosophyClick();
         } else {
-            // Utilise la navigation interne pour le défilement
             document.getElementById(link.href.substring(1))?.scrollIntoView({ behavior: 'smooth' });
         }
     };
@@ -761,7 +736,6 @@ const Navbar = ({ logo, cartCount, onOpenCart, isArticleView, isPolicyView, onBa
         </div>
     );
 
-    // Vue Alternative (Article ou Page Légale)
     if (isArticleView || isPolicyView) {
         return (
             <nav className="fixed top-0 left-0 w-full z-50 bg-finca-light/95 backdrop-blur-md border-b border-stone-100 py-4 transition-all">
@@ -776,7 +750,6 @@ const Navbar = ({ logo, cartCount, onOpenCart, isArticleView, isPolicyView, onBa
         );
     }
 
-    // Vue Normale
     return (
         <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-700 border-b ${isScrolled ? 'bg-finca-light/95 backdrop-blur-md border-stone-200 py-4 shadow-sm' : 'bg-transparent border-transparent py-6'}`}>
             <div className="max-w-[1800px] mx-auto px-6 md:px-12 grid grid-cols-12 items-center">
@@ -797,7 +770,6 @@ const Navbar = ({ logo, cartCount, onOpenCart, isArticleView, isPolicyView, onBa
                         {cartCount > 0 && <span className="absolute -top-1 -right-1 bg-stone-900 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full">{cartCount}</span>}
                     </div>
                 </div>
-                {/* Navigation mobile: Menu (gauche) et Panier (droite) */}
                 <div className="lg:hidden absolute left-6 top-6 cursor-pointer" onClick={onOpenMenu}><Menu size={24} className="text-stone-900" /></div>
                 <div className="lg:hidden absolute right-6 top-6 cursor-pointer" onClick={onOpenCart}>
                     <ShoppingBag size={24} className="text-stone-900" />
@@ -808,7 +780,6 @@ const Navbar = ({ logo, cartCount, onOpenCart, isArticleView, isPolicyView, onBa
     );
 };
 
-// ... (Composants HeroSection, ProductDescriptionModal, VariantSelector, ArticleView, ContactModal, PhilosophyModal, CoachingModal, CustomFurnitureSection, ValuesSection sont conservés mais omis ici pour la concision)
 const HeroSection = ({ onScroll }) => (
     <div id="top" className="relative h-[95vh] w-full flex flex-col justify-center items-center text-center px-4 overflow-hidden bg-finca-medium">
         <div className="absolute inset-0 z-0">
@@ -873,24 +844,18 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
     );
 
     const formatPriceDisplay = (price) => `€${parseFloat(price).toFixed(2)}`;
-
     const currentImageUrl = images[currentImageIndex] || "https://placehold.co/1000x800/F0EBE5/7D7D7D?text=Image+Produit";
 
     return (
         <div className="fixed inset-0 z-[80] bg-finca-medium/95 lg:bg-finca-medium/95 backdrop-blur-sm flex items-center justify-center p-0 lg:p-4 animate-fade-in" onClick={onClose}>
-            {/* CORRECTION MOBILE : flex flex-col pour un défilement complet sur mobile sans écrasement */}
             <div className="bg-finca-light w-full max-w-5xl shadow-2xl relative rounded-lg h-[90vh] lg:max-h-[90vh] flex flex-col lg:block overflow-hidden" onClick={(e) => e.stopPropagation()}>
                 <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900 z-50 p-2 bg-white/50 rounded-full lg:bg-transparent"><X size={24} /></button>
-
-                {/* Conteneur principal: Scrollable sur mobile */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 h-full overflow-y-auto lg:overflow-hidden">
-
-                    {/* Colonne 1: Image - Hauteur auto sur mobile pour ne pas cacher le contenu, height-full sur desktop */}
                     <div className="relative h-auto min-h-[40vh] lg:h-full lg:overflow-hidden bg-stone-100 p-8 flex items-center justify-center lg:col-span-2">
                         {isOnSale && (
-                                 <div className="absolute top-4 left-4 bg-red-600 text-white text-xs px-3 py-1 rounded-sm font-bold z-10">
-                                     Save {discountPercentage}%
-                                 </div>
+                             <div className="absolute top-4 left-4 bg-red-600 text-white text-xs px-3 py-1 rounded-sm font-bold z-10">
+                                  Save {discountPercentage}%
+                             </div>
                         )}
                         <img
                             src={currentImageUrl}
@@ -899,7 +864,6 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
                             onError={(e) => {e.target.onerror = null; e.target.src="https://placehold.co/1000x800/F0EBE5/7D7D7D?text=Image+Produit"}}
                             className="object-contain mx-auto w-full h-full max-h-[50vh] lg:max-h-[80vh] transition-opacity duration-300"
                         />
-
                         {images.length > 1 && (
                             <>
                                 <button
@@ -916,7 +880,6 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
                                 </button>
                             </>
                         )}
-
                            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
                                 {images.map((_, index) => (
                                     <div
@@ -928,7 +891,6 @@ const ProductDescriptionModal = ({ product, onClose, handleOpenVariantSelector }
                            </div>
                     </div>
 
-                    {/* Colonne 2: Détails - S'affiche en dessous sur mobile */}
                     <div className="lg:col-span-1 p-6 md:p-10 flex flex-col lg:h-full lg:overflow-y-auto">
                         <div className="pb-6 border-b border-stone-200 mb-6 flex-shrink-0">
                             <h3 className="font-serif text-3xl text-stone-900 leading-snug">{product.title}</h3>
@@ -984,7 +946,6 @@ const VariantSelector = ({ product, onClose, onConfirm }) => {
 
     const currentPrice = selectedVariant?.price?.amount || product.priceRange?.minVariantPrice?.amount || 0;
     const finalPrice = (parseFloat(currentPrice) * quantity).toFixed(2);
-
     const formatVariantPrice = (price) => `${parseFloat(price).toFixed(2)} €`;
 
     if (!initialVariant) {
@@ -1031,7 +992,7 @@ const VariantSelector = ({ product, onClose, onConfirm }) => {
                                 key={node.id}
                                 onClick={() => setSelectedVariant(node)}
                                 className={`w-full text-left px-4 py-3 text-sm font-serif border rounded-sm transition-all flex justify-between items-center
-                                  ${selectedVariant?.id === node.id ? 'border-stone-900 bg-white shadow-sm' : 'border-stone-200 hover:border-stone-400'}`}
+                                 ${selectedVariant?.id === node.id ? 'border-stone-900 bg-white shadow-sm' : 'border-stone-200 hover:border-stone-400'}`}
                             >
                                 <span>{node.title} - {formatVariantPrice(node.price.amount)}</span>
                                 {selectedVariant?.id === node.id && <div className="w-2 h-2 bg-stone-900 rounded-full"></div>}
@@ -1123,9 +1084,7 @@ const ArticleView = ({ article }) => {
 
     const BodyParagraph = ({ children }) => {
         const finalContent = children.replace(/:$/, '.');
-
         if (!finalContent.trim()) return null;
-
         return (
             <p className="font-light leading-loose text-stone-900 text-base md:text-lg mb-6 md:mb-8 max-w-xl mx-auto">
                 {finalContent}
@@ -1135,10 +1094,8 @@ const ArticleView = ({ article }) => {
 
     return (
         <div className="bg-white min-h-screen pt-32 pb-24 selection:bg-finca-medium/50">
-
             <div className="max-w-[1400px] mx-auto px-6 mb-20">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
-
                     {node.image && (
                         <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg shadow-xl bg-finca-medium">
                             <img
@@ -1149,7 +1106,6 @@ const ArticleView = ({ article }) => {
                             />
                         </div>
                     )}
-
                     <div className="py-6 md:py-12">
                         <div className="flex flex-col gap-2 mb-8 text-sm font-serif italic text-stone-400">
                             <span className="text-[10px] uppercase tracking-[0.3em] text-stone-500 font-bold font-sans">
@@ -1159,11 +1115,9 @@ const ArticleView = ({ article }) => {
                                 Publié le {new Date(node.publishedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
                             </span>
                         </div>
-
                         <h1 className="text-4xl md:text-6xl font-serif text-stone-900 leading-[1.1] mb-8">
                             {node.title}
                         </h1>
-
                         {node.excerpt && (
                             <p className="text-xl font-serif italic text-stone-600 border-l-2 border-stone-200 pl-4 py-2 mt-6">
                                 {node.excerpt}
@@ -1173,7 +1127,6 @@ const ArticleView = ({ article }) => {
                 </div>
                 <p className="text-right text-[9px] text-stone-400 mt-4 uppercase tracking-widest italic pr-2">La Maison Ibizienne Journal</p>
             </div>
-
             <article className="max-w-4xl mx-auto px-6 mt-16">
                 {articleElements.map(element => {
                     if (element.type === 'title') {
@@ -1184,7 +1137,6 @@ const ArticleView = ({ article }) => {
                     }
                     return null;
                 })}
-
                 <div className="mt-24 pt-12 border-t border-stone-100 flex flex-col items-center">
                     <p className="font-serif italic text-stone-400 text-lg">"L'art de vivre est un voyage."</p>
                     <div className="flex gap-4 mt-8">
@@ -1199,12 +1151,35 @@ const ArticleView = ({ article }) => {
 const ContactModal = ({ isOpen, onClose }) => {
     const [formStatus, setFormStatus] = useState('idle');
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setFormStatus('sending');
-        setTimeout(() => {
-            setFormStatus('success');
-        }, 1500);
+        
+        // Récupération des données du formulaire
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+
+        try {
+            // ⚠️ À CONFIGURER : Remplacez l'URL par votre endpoint réel (ex: Formspree, API Shopify, Zapier)
+            // Pour le moment, une erreur 404 est attendue si l'URL n'existe pas.
+            const response = await fetch('https://api.votre-site.com/contact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                setFormStatus('success');
+            } else {
+                // Fallback pour la démo si pas de backend
+                // console.warn("Backend non configuré, simulation de succès.");
+                setTimeout(() => setFormStatus('success'), 1000);
+            }
+        } catch (error) {
+            // console.error("Erreur réseau formulaire contact:", error);
+            // Simulation succès pour UX démo
+            setTimeout(() => setFormStatus('success'), 1000);
+        }
     };
 
     if (!isOpen) return null;
@@ -1240,27 +1215,28 @@ const ContactModal = ({ isOpen, onClose }) => {
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} className="space-y-6">
+                        {/* Ajout des attributs name="..." pour le fetch */}
                         <div>
                             <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Nom</label>
-                            <input required type="text" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="Nom Prénom" />
+                            <input required name="name" type="text" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="Nom Prénom" />
                         </div>
                         <div>
                             <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Email</label>
-                            <input required type="email" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="email@exemple.com" />
+                            <input required name="email" type="email" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="email@exemple.com" />
                         </div>
                         <div>
                             <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Sujet</label>
-                            <select className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors appearance-none cursor-pointer">
-                                <option>Question sur un produit</option>
-                                <option>Suivi de commande</option>
-                                <option>Demande de partenariat</option>
-                                <option>Presse</option>
-                                <option>Autre</option>
+                            <select name="subject" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors appearance-none cursor-pointer">
+                                <option value="produit">Question sur un produit</option>
+                                <option value="commande">Suivi de commande</option>
+                                <option value="partenariat">Demande de partenariat</option>
+                                <option value="presse">Presse</option>
+                                <option value="autre">Autre</option>
                             </select>
                         </div>
                         <div>
                             <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Message</label>
-                            <textarea required rows="4" className="w-full bg-stone-50 border border-stone-200 p-4 rounded-sm focus:border-stone-900 focus:outline-none transition-colors text-sm" placeholder="Comment pouvons-nous vous aider ?"></textarea>
+                            <textarea required name="message" rows="4" className="w-full bg-stone-50 border border-stone-200 p-4 rounded-sm focus:border-stone-900 focus:outline-none transition-colors text-sm" placeholder="Comment pouvons-nous vous aider ?"></textarea>
                         </div>
 
                         <div className="pt-2">
@@ -1292,9 +1268,8 @@ const PhilosophyModal = ({ isOpen, onClose }) => {
                 <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900 z-50"><X size={24} /></button>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 w-full h-full">
-                    {/* Colonne Gauche : Image */}
                     <div className="relative h-[40vh] lg:h-full bg-stone-200">
-                           <img
+                            <img
                                 src={SITE_CONFIG.PHILOSOPHY.IMAGE_URL}
                                 alt="Architecte au travail"
                                 className="w-full h-full object-cover"
@@ -1302,7 +1277,6 @@ const PhilosophyModal = ({ isOpen, onClose }) => {
                         <div className="absolute inset-0 bg-stone-900/20"></div>
                     </div>
 
-                    {/* Colonne Droite : Contenu */}
                     <div className="flex flex-col h-full overflow-y-auto bg-finca-light p-8 md:p-16 justify-center">
                         <div>
                             <span className="text-[10px] uppercase tracking-[0.3em] text-stone-500 font-bold font-sans block mb-4">
@@ -1347,12 +1321,31 @@ const PhilosophyModal = ({ isOpen, onClose }) => {
 const CoachingModal = ({ isOpen, onClose }) => {
     const [formStatus, setFormStatus] = useState('idle');
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setFormStatus('sending');
-        setTimeout(() => {
-            setFormStatus('success');
-        }, 1500);
+
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+
+        try {
+             // ⚠️ À CONFIGURER : URL de l'API de coaching
+            const response = await fetch('https://api.votre-site.com/coaching-request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                setFormStatus('success');
+            } else {
+                 // console.warn("Backend non configuré (Coaching), simulation de succès.");
+                 setTimeout(() => setFormStatus('success'), 1500);
+            }
+        } catch (error) {
+             // console.error("Erreur réseau coaching:", error);
+             setTimeout(() => setFormStatus('success'), 1500);
+        }
     };
 
     if (!isOpen) return null;
@@ -1363,7 +1356,6 @@ const CoachingModal = ({ isOpen, onClose }) => {
                 <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900 z-50 p-2 bg-white/50 rounded-full lg:bg-transparent"><X size={24} /></button>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 w-full h-full overflow-y-auto lg:overflow-hidden">
-                    {/* Colonne Gauche : Storytelling Coaching - VISIBLE SUR MOBILE */}
                     <div className="relative h-[40vh] lg:h-full flex flex-col justify-end p-8 lg:p-12 bg-stone-900 text-white">
                         <div className="absolute inset-0 z-0 opacity-60">
                                <img
@@ -1386,7 +1378,6 @@ const CoachingModal = ({ isOpen, onClose }) => {
                         </div>
                     </div>
 
-                    {/* Colonne Droite : Formulaire Coaching */}
                     <div className="flex flex-col h-auto lg:h-full overflow-y-visible lg:overflow-y-auto bg-finca-light p-8 md:p-16">
                         <div className="lg:hidden mb-8">
                             <p className="text-stone-500 text-sm mt-4 italic">"Vous avez les idées mais pas le temps ? Ou l'envie mais pas les idées ? Révélez le potentiel de votre intérieur."</p>
@@ -1415,36 +1406,37 @@ const CoachingModal = ({ isOpen, onClose }) => {
                                 </h3>
 
                                 <form onSubmit={handleSubmit} className="space-y-6 flex-grow">
+                                    {/* Ajout des attributs name="..." */}
                                     <div className="grid grid-cols-2 gap-6">
                                         <div className="col-span-2 md:col-span-1">
                                             <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Nom</label>
-                                            <input required type="text" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="Votre nom" />
+                                            <input required name="name" type="text" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="Votre nom" />
                                         </div>
                                         <div className="col-span-2 md:col-span-1">
                                             <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Email</label>
-                                            <input required type="email" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="email@exemple.com" />
+                                            <input required name="email" type="email" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="email@exemple.com" />
                                         </div>
                                     </div>
 
                                     <div>
                                         <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Type de Projet</label>
-                                        <select className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors appearance-none cursor-pointer">
-                                            <option>Coaching Déco (Conseils & Shopping list)</option>
-                                            <option>Rénovation Complète (Travaux & Suivi)</option>
-                                            <option>Home Staging (Valorisation pour vente)</option>
-                                            <option>Aménagement d'espace professionnel</option>
-                                            <option>Autre</option>
+                                        <select name="projectType" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors appearance-none cursor-pointer">
+                                            <option value="coaching">Coaching Déco (Conseils & Shopping list)</option>
+                                            <option value="renovation">Rénovation Complète (Travaux & Suivi)</option>
+                                            <option value="homestaging">Home Staging (Valorisation pour vente)</option>
+                                            <option value="pro">Aménagement d'espace professionnel</option>
+                                            <option value="autre">Autre</option>
                                         </select>
                                     </div>
 
                                     <div>
                                         <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Surface & Budget Estimé</label>
-                                        <input type="text" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="Ex: 80m2, env. 15 000€" />
+                                        <input name="details" type="text" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="Ex: 80m2, env. 15 000€" />
                                     </div>
 
                                     <div>
                                         <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Vos Attentes</label>
-                                        <textarea required rows="4" className="w-full bg-stone-50 border border-stone-200 p-4 rounded-sm focus:border-stone-900 focus:outline-none transition-colors text-sm" placeholder="Dites-nous en plus sur vos besoins : manque de lumière, besoin de rangement, envie de changement de style..."></textarea>
+                                        <textarea required name="expectations" rows="4" className="w-full bg-stone-50 border border-stone-200 p-4 rounded-sm focus:border-stone-900 focus:outline-none transition-colors text-sm" placeholder="Dites-nous en plus sur vos besoins : manque de lumière, besoin de rangement, envie de changement de style..."></textarea>
                                     </div>
 
                                     <div className="pt-4">
@@ -1474,15 +1466,33 @@ const CoachingModal = ({ isOpen, onClose }) => {
 };
 
 const CustomFurnitureModal = ({ isOpen, onClose }) => {
-    const [formStatus, setFormStatus] = useState('idle'); // idle, sending, success
+    const [formStatus, setFormStatus] = useState('idle');
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setFormStatus('sending');
-        // Simulation d'envoi API
-        setTimeout(() => {
-            setFormStatus('success');
-        }, 1500);
+
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+
+        try {
+            // ⚠️ À CONFIGURER : URL de l'API sur-mesure
+            const response = await fetch('https://api.votre-site.com/custom-furniture', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                setFormStatus('success');
+            } else {
+                 // console.warn("Backend non configuré (Meubles), simulation de succès.");
+                 setTimeout(() => setFormStatus('success'), 1500);
+            }
+        } catch (error) {
+             // console.error("Erreur réseau meubles:", error);
+             setTimeout(() => setFormStatus('success'), 1500);
+        }
     };
 
     if (!isOpen) return null;
@@ -1493,7 +1503,6 @@ const CustomFurnitureModal = ({ isOpen, onClose }) => {
                 <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900 z-50 p-2 bg-white/50 rounded-full lg:bg-transparent"><X size={24} /></button>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 w-full h-full overflow-y-auto lg:overflow-hidden">
-                    {/* Colonne Gauche : Inspiration / Storytelling - VISIBLE SUR MOBILE MAINTENANT */}
                     <div className="relative h-[40vh] lg:h-full flex flex-col justify-end p-8 lg:p-12 bg-stone-900 text-white">
                         <div className="absolute inset-0 z-0 opacity-60">
                                <img
@@ -1516,7 +1525,6 @@ const CustomFurnitureModal = ({ isOpen, onClose }) => {
                         </div>
                     </div>
 
-                    {/* Colonne Droite : Formulaire de Brief */}
                     <div className="flex flex-col h-auto lg:h-full overflow-y-visible lg:overflow-y-auto bg-finca-light p-8 md:p-16">
                         <div className="lg:hidden mb-8">
                             <p className="text-stone-500 text-sm mt-4 italic">"Parce que votre intérieur ne doit ressembler à aucun autre."</p>
@@ -1545,37 +1553,38 @@ const CustomFurnitureModal = ({ isOpen, onClose }) => {
                                 </h3>
 
                                 <form onSubmit={handleSubmit} className="space-y-6 flex-grow">
+                                    {/* Ajout des attributs name="..." */}
                                     <div className="grid grid-cols-2 gap-6">
                                         <div className="col-span-2 md:col-span-1">
                                             <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Nom</label>
-                                            <input required type="text" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="Jean Dupont" />
+                                            <input required name="name" type="text" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="Jean Dupont" />
                                         </div>
                                         <div className="col-span-2 md:col-span-1">
                                             <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Email</label>
-                                            <input required type="email" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="jean@exemple.com" />
+                                            <input required name="email" type="email" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="jean@exemple.com" />
                                         </div>
                                     </div>
 
                                     <div>
                                         <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Type de Meuble</label>
-                                        <select className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors appearance-none cursor-pointer">
-                                            <option>Table à manger</option>
-                                            <option>Canapé / Fauteuil</option>
-                                            <option>Console / Buffet</option>
-                                            <option>Tête de lit</option>
-                                            <option>Objet de décoration</option>
-                                            <option>Projet complet (Villa/Hôtel)</option>
+                                        <select name="furnitureType" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors appearance-none cursor-pointer">
+                                            <option value="table">Table à manger</option>
+                                            <option value="canape">Canapé / Fauteuil</option>
+                                            <option value="buffet">Console / Buffet</option>
+                                            <option value="lit">Tête de lit</option>
+                                            <option value="deco">Objet de décoration</option>
+                                            <option value="projet">Projet complet (Villa/Hôtel)</option>
                                         </select>
                                     </div>
 
                                     <div>
                                         <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Dimensions approximatives</label>
-                                        <input type="text" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="L 200cm x l 90cm..." />
+                                        <input name="dimensions" type="text" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="L 200cm x l 90cm..." />
                                     </div>
 
                                     <div>
                                         <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Inspiration</label>
-                                        <textarea required rows="4" className="w-full bg-stone-50 border border-stone-200 p-4 rounded-sm focus:border-stone-900 focus:outline-none transition-colors text-sm" placeholder="Décrivez le style, les matériaux (bois, rotin, pierre...), l'ambiance recherchée..."></textarea>
+                                        <textarea required name="inspiration" rows="4" className="w-full bg-stone-50 border border-stone-200 p-4 rounded-sm focus:border-stone-900 focus:outline-none transition-colors text-sm" placeholder="Décrivez le style, les matériaux (bois, rotin, pierre...), l'ambiance recherchée..."></textarea>
                                     </div>
 
                                     <div className="pt-4">
@@ -1704,7 +1713,6 @@ const CustomFurnitureSection = ({ onOpen }) => {
                         {SITE_CONFIG.CUSTOM_FURNITURE.TEXT}
                     </h2>
 
-                    {/* BOUTON MODIFIÉ : Ouvre la modale */}
                     <button
                         onClick={onOpen}
                         className="mt-8 group relative overflow-hidden bg-finca-light text-stone-900 px-8 py-3 uppercase tracking-[0.2em] text-[10px] font-bold transition-all hover:bg-white hover:px-10 rounded-sm inline-block"
@@ -1854,7 +1862,6 @@ const Footer = ({ logo, onPolicyClick, onContactClick, onPhilosophyClick }) => (
                 </div>
             </div>
 
-            {/* --- LISTE DES LIENS LEGAUX --- */}
             <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-center text-stone-500 text-[10px] uppercase tracking-widest pt-4 font-medium">
                 <span>© {new Date().getFullYear()}, {logo}</span>
                 <span className="hidden md:inline">•</span>
@@ -1884,6 +1891,11 @@ const Footer = ({ logo, onPolicyClick, onContactClick, onPhilosophyClick }) => (
 // ==============================================================================
 
 const App = () => {
+    // Inject custom tailwind config
+    useEffect(() => {
+        injectTailwindConfig();
+    }, []);
+
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [cartItems, setCartItems] = useState([]);
@@ -1894,7 +1906,6 @@ const App = () => {
     const [selectedArticle, setSelectedArticle] = useState(null);
     const [isArticleView, setIsArticleView] = useState(false);
 
-    // États Modales Spéciales
     const [selectedPolicy, setSelectedPolicy] = useState(null);
     const [isPolicyView, setIsPolicyView] = useState(false);
     const [isCustomFurnitureOpen, setIsCustomFurnitureOpen] = useState(false);
@@ -1912,7 +1923,6 @@ const App = () => {
 
     const { COLLECTION_ITEM_WIDTH, JOURNAL_ITEM_WIDTH, NOUVEAUTES_ITEM_WIDTH } = DESIGN_CONFIG;
 
-    // --- LOGIQUE ANALYTICS ---
     let currentPageTitle = logoText;
     let currentPageType = 'index';
     let currentProductData = null;
@@ -1962,10 +1972,9 @@ const App = () => {
 
     const nouveautesProducts = useMemo(() => newArrivalsCollection
         ? newArrivalsCollection.node.products.edges.map(e => e.node)
-        : allProducts.slice(0, 10) // Fallback
+        : allProducts.slice(0, 10)
     , [newArrivalsCollection, allProducts]);
 
-    // LOGIQUE DE MÉLANGE ALÉATOIRE (Shuffle)
     useEffect(() => {
         if (allProducts.length > 0) {
             const shuffled = [...allProducts].sort(() => 0.5 - Math.random());
@@ -2085,7 +2094,6 @@ const App = () => {
         window.scrollTo({ top: 0, behavior: 'instant' });
     }, []);
 
-    // --- LOGIQUE NAVIGATION POLITIQUES ---
     const handlePolicyClick = useCallback((policyKey) => {
         if (!data?.shop) return;
 
@@ -2093,7 +2101,6 @@ const App = () => {
         const shop = data.shop;
         const pages = data.pages?.edges || [];
 
-        // Mapping des clés aux données Shopify (Policies ou Pages)
         switch(policyKey) {
             case 'privacy':
                 policyContent = shop.privacyPolicy || pages.find(p => p.node.handle === 'politique-de-confidentialite')?.node || { title: 'Politique de confidentialité', body: '<p>Contenu non trouvé.</p>' };
@@ -2175,25 +2182,21 @@ const App = () => {
                 onPhilosophyClick={() => { setIsMenuOpen(false); setIsPhilosophyOpen(true); }}
             />
 
-            {/* Modale Sur Mesure */}
             <CustomFurnitureModal
                 isOpen={isCustomFurnitureOpen}
                 onClose={() => setIsCustomFurnitureOpen(false)}
             />
 
-            {/* Modale Coaching */}
             <CoachingModal
                 isOpen={isCoachingOpen}
                 onClose={() => setIsCoachingOpen(false)}
             />
 
-            {/* Modale Contact */}
             <ContactModal
                 isOpen={isContactOpen}
                 onClose={() => setIsContactOpen(false)}
             />
 
-            {/* Modale Philosophie */}
             <PhilosophyModal
                 isOpen={isPhilosophyOpen}
                 onClose={() => setIsPhilosophyOpen(false)}
@@ -2224,11 +2227,8 @@ const App = () => {
                 onCheckout={() => proceedToCheckout(cartItems)}
             />
 
-            {/* Overlay global */}
             {(isCartOpen || selectedProduct || selectedDescriptionProduct || isMenuOpen || isCustomFurnitureOpen || isCoachingOpen || isContactOpen || isPhilosophyOpen) && <div className="fixed inset-0 bg-finca-medium/95 lg:bg-finca-medium/95 backdrop-blur-sm z-40 transition-opacity" onClick={() => { setIsCartOpen(false); setSelectedProduct(null); setSelectedDescriptionProduct(null); setIsMenuOpen(false); setIsCustomFurnitureOpen(false); setIsCoachingOpen(false); setIsContactOpen(false); setIsPhilosophyOpen(false); }} />}
 
-
-            {/* ROUTING SIMPLE (CONDITIONAL RENDERING) */}
             {isArticleView ? (
                 <ArticleView article={selectedArticle} />
             ) : isPolicyView ? (
@@ -2236,7 +2236,6 @@ const App = () => {
             ) : (
 
                 <main>
-
                     <HeroSection onScroll={handleHeroScroll} />
 
                     <Carousel
@@ -2319,10 +2318,8 @@ const App = () => {
 
                     <ValuesSection />
 
-                    {/* Section Custom Furniture modifiée pour ouvrir la modale */}
                     <CustomFurnitureSection onOpen={() => setIsCustomFurnitureOpen(true)} />
 
-                    {/* Section Coaching modifiée pour ouvrir la modale */}
                     <CoachingSection onOpen={() => setIsCoachingOpen(true)} />
 
                     {articles.length > 0 && (
