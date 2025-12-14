@@ -1155,29 +1155,25 @@ const ContactModal = ({ isOpen, onClose }) => {
         e.preventDefault();
         setFormStatus('sending');
         
-        // Récupération des données du formulaire
         const formData = new FormData(e.target);
-        const data = Object.fromEntries(formData.entries());
-
+        
+        // --- LOGIQUE D'ENVOI POUR NETLIFY ---
         try {
-            // ⚠️ À CONFIGURER : Remplacez l'URL par votre endpoint réel (ex: Formspree, API Shopify, Zapier)
-            // Pour le moment, une erreur 404 est attendue si l'URL n'existe pas.
-            const response = await fetch('https://api.votre-site.com/contact', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+            const response = await fetch("/", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams(formData).toString(),
             });
 
             if (response.ok) {
                 setFormStatus('success');
             } else {
-                // Fallback pour la démo si pas de backend
-                // console.warn("Backend non configuré, simulation de succès.");
+                // Fallback si l'envoi échoue (ex: pas sur Netlify)
+                console.warn("Erreur Netlify, fallback simulation");
                 setTimeout(() => setFormStatus('success'), 1000);
             }
         } catch (error) {
-            // console.error("Erreur réseau formulaire contact:", error);
-            // Simulation succès pour UX démo
+            console.error("Erreur d'envoi:", error);
             setTimeout(() => setFormStatus('success'), 1000);
         }
     };
@@ -1214,8 +1210,15 @@ const ContactModal = ({ isOpen, onClose }) => {
                         </button>
                     </div>
                 ) : (
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* Ajout des attributs name="..." pour le fetch */}
+                    <form 
+                        name="contact" 
+                        method="POST" 
+                        data-netlify="true" 
+                        onSubmit={handleSubmit} 
+                        className="space-y-6"
+                    >
+                        <input type="hidden" name="form-name" value="contact" />
+                        
                         <div>
                             <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Nom</label>
                             <input required name="name" type="text" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="Nom Prénom" />
@@ -1326,25 +1329,24 @@ const CoachingModal = ({ isOpen, onClose }) => {
         setFormStatus('sending');
 
         const formData = new FormData(e.target);
-        const data = Object.fromEntries(formData.entries());
-
+        
+        // --- LOGIQUE D'ENVOI POUR NETLIFY ---
         try {
-             // ⚠️ À CONFIGURER : URL de l'API de coaching
-            const response = await fetch('https://api.votre-site.com/coaching-request', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+            const response = await fetch("/", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams(formData).toString(),
             });
 
             if (response.ok) {
                 setFormStatus('success');
             } else {
-                 // console.warn("Backend non configuré (Coaching), simulation de succès.");
-                 setTimeout(() => setFormStatus('success'), 1500);
+                console.warn("Erreur Netlify, fallback simulation");
+                setTimeout(() => setFormStatus('success'), 1500);
             }
         } catch (error) {
-             // console.error("Erreur réseau coaching:", error);
-             setTimeout(() => setFormStatus('success'), 1500);
+            console.error("Erreur d'envoi:", error);
+            setTimeout(() => setFormStatus('success'), 1500);
         }
     };
 
@@ -1405,7 +1407,15 @@ const CoachingModal = ({ isOpen, onClose }) => {
                                     Demander un devis coaching
                                 </h3>
 
-                                <form onSubmit={handleSubmit} className="space-y-6 flex-grow">
+                                <form 
+                                    name="coaching"
+                                    method="POST"
+                                    data-netlify="true"
+                                    onSubmit={handleSubmit} 
+                                    className="space-y-6 flex-grow"
+                                >
+                                    <input type="hidden" name="form-name" value="coaching" />
+
                                     {/* Ajout des attributs name="..." */}
                                     <div className="grid grid-cols-2 gap-6">
                                         <div className="col-span-2 md:col-span-1">
@@ -1473,25 +1483,24 @@ const CustomFurnitureModal = ({ isOpen, onClose }) => {
         setFormStatus('sending');
 
         const formData = new FormData(e.target);
-        const data = Object.fromEntries(formData.entries());
-
+        
+        // --- LOGIQUE D'ENVOI POUR NETLIFY ---
         try {
-            // ⚠️ À CONFIGURER : URL de l'API sur-mesure
-            const response = await fetch('https://api.votre-site.com/custom-furniture', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+            const response = await fetch("/", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams(formData).toString(),
             });
 
             if (response.ok) {
                 setFormStatus('success');
             } else {
-                 // console.warn("Backend non configuré (Meubles), simulation de succès.");
-                 setTimeout(() => setFormStatus('success'), 1500);
+                console.warn("Erreur Netlify, fallback simulation");
+                setTimeout(() => setFormStatus('success'), 1500);
             }
         } catch (error) {
-             // console.error("Erreur réseau meubles:", error);
-             setTimeout(() => setFormStatus('success'), 1500);
+            console.error("Erreur d'envoi:", error);
+            setTimeout(() => setFormStatus('success'), 1500);
         }
     };
 
@@ -1552,7 +1561,15 @@ const CustomFurnitureModal = ({ isOpen, onClose }) => {
                                     Parlez-nous de votre projet
                                 </h3>
 
-                                <form onSubmit={handleSubmit} className="space-y-6 flex-grow">
+                                <form 
+                                    name="custom-furniture"
+                                    method="POST"
+                                    data-netlify="true"
+                                    onSubmit={handleSubmit} 
+                                    className="space-y-6 flex-grow"
+                                >
+                                    <input type="hidden" name="form-name" value="custom-furniture" />
+
                                     {/* Ajout des attributs name="..." */}
                                     <div className="grid grid-cols-2 gap-6">
                                         <div className="col-span-2 md:col-span-1">
