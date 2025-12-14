@@ -134,21 +134,23 @@ const SITE_CONFIG = {
 // COMPOSANT CACHÉ POUR LA DÉTECTION NETLIFY
 // ==============================================================================
 // Ce composant est essentiel pour que les bots Netlify détectent les champs
-// lors du build, même si l'app est en React (SPA).
+// lors du build. Il doit contenir les mêmes 'name' que les formulaires React.
 const NetlifyFormsDefinitions = () => (
     <div style={{ display: 'none' }}>
         {/* Formulaire Contact */}
-        <form name="contact" data-netlify="true" netlify-honeypot="bot-field" hidden>
+        <form name="contact" data-netlify="true" netlify-honeypot="bot-field">
+            <input type="hidden" name="form-name" value="contact" />
             <input type="text" name="name" />
             <input type="email" name="email" />
             <select name="subject"></select>
             <textarea name="message"></textarea>
-            {/* Champ sujet pour l'email admin */}
+            {/* Champ sujet spécifique pour l'objet de l'email admin */}
             <input type="text" name="subject_mail" /> 
         </form>
 
         {/* Formulaire Coaching */}
-        <form name="coaching" data-netlify="true" netlify-honeypot="bot-field" hidden>
+        <form name="coaching" data-netlify="true" netlify-honeypot="bot-field">
+            <input type="hidden" name="form-name" value="coaching" />
             <input type="text" name="name" />
             <input type="email" name="email" />
             <select name="projectType"></select>
@@ -157,7 +159,8 @@ const NetlifyFormsDefinitions = () => (
         </form>
 
         {/* Formulaire Meubles Sur Mesure */}
-        <form name="custom-furniture" data-netlify="true" netlify-honeypot="bot-field" hidden>
+        <form name="custom-furniture" data-netlify="true" netlify-honeypot="bot-field">
+            <input type="hidden" name="form-name" value="custom-furniture" />
             <input type="text" name="name" />
             <input type="email" name="email" />
             <select name="furnitureType"></select>
@@ -2212,6 +2215,8 @@ const App = () => {
 
     return (
         <div className="relative min-h-screen bg-finca-light font-sans text-stone-900">
+            {/* DÉFINITIONS DES FORMULAIRES CACHÉS POUR NETLIFY - PLACÉ AU TOP LEVEL */}
+            <NetlifyFormsDefinitions />
 
             <Navbar
                 logo={logoText}
@@ -2393,9 +2398,6 @@ const App = () => {
                         onContactClick={() => setIsContactOpen(true)}
                         onPhilosophyClick={() => setIsPhilosophyOpen(true)}
                     />
-
-                    {/* DÉFINITIONS DES FORMULAIRES CACHÉS POUR NETLIFY */}
-                    <NetlifyFormsDefinitions />
 
                 </main>
             )}
