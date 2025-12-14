@@ -6,7 +6,6 @@ import { ShoppingBag, X, Instagram, Facebook, Loader, ChevronRight, Menu, ArrowL
 // ==============================================================================
 
 // --- APPLICATION DE LA CONFIGURATION TAILWIND ---
-// Note: This injects custom config into the Tailwind instance loaded in the environment
 const injectTailwindConfig = () => {
     if (typeof window !== 'undefined' && window.tailwind) {
         window.tailwind.config = {
@@ -39,7 +38,6 @@ const injectTailwindConfig = () => {
 };
 
 // --- CONFIGURATION ---
-// Hardcoded for the preview environment to ensure runnability without .env files
 const STOREFRONT_ACCESS_TOKEN = '4b2746c099f9603fde4f9639336a235d'; 
 const SHOPIFY_DOMAIN = '91eg2s-ah.myshopify.com';
 const API_VERSION = '2024-01';
@@ -133,6 +131,43 @@ const SITE_CONFIG = {
 };
 
 // ==============================================================================
+// COMPOSANT CACHÉ POUR LA DÉTECTION NETLIFY
+// ==============================================================================
+// Ce composant est essentiel pour que les bots Netlify détectent les champs
+// lors du build, même si l'app est en React (SPA).
+const NetlifyFormsDefinitions = () => (
+    <div style={{ display: 'none' }}>
+        {/* Formulaire Contact */}
+        <form name="contact" data-netlify="true" netlify-honeypot="bot-field" hidden>
+            <input type="text" name="name" />
+            <input type="email" name="email" />
+            <select name="subject"></select>
+            <textarea name="message"></textarea>
+            {/* Champ sujet pour l'email admin */}
+            <input type="text" name="subject_mail" /> 
+        </form>
+
+        {/* Formulaire Coaching */}
+        <form name="coaching" data-netlify="true" netlify-honeypot="bot-field" hidden>
+            <input type="text" name="name" />
+            <input type="email" name="email" />
+            <select name="projectType"></select>
+            <input type="text" name="details" />
+            <textarea name="expectations"></textarea>
+        </form>
+
+        {/* Formulaire Meubles Sur Mesure */}
+        <form name="custom-furniture" data-netlify="true" netlify-honeypot="bot-field" hidden>
+            <input type="text" name="name" />
+            <input type="email" name="email" />
+            <select name="furnitureType"></select>
+            <input type="text" name="dimensions" />
+            <textarea name="inspiration"></textarea>
+        </form>
+    </div>
+);
+
+// ==============================================================================
 // 3. LOGIQUE API & TRACKING ANALYTICS
 // ==============================================================================
 
@@ -166,8 +201,6 @@ const useAnalyticsTracker = (pageType, pageTitle, product = null) => {
             t: pageType === 'index' ? 'home' : pageType,
             p: pageTitle,
         };
-
-        // console.log(`[Analytics] Tracked: ${pageTitle} (${pageType})`);
     }, [pageTitle, pageType, product]);
 };
 
@@ -250,8 +283,6 @@ async function fetchShopifyData() {
     `;
 
     try {
-        // NOTE: In some code sandboxes, fetching directly from Shopify might be blocked by CORS.
-        // If this fails, we will gracefully return null so the App falls back to FALLBACK_DATA.
         const response = await fetch(`https://${SHOPIFY_DOMAIN}/api/${API_VERSION}/graphql.json`, {
             method: 'POST',
             headers: {
@@ -267,7 +298,7 @@ async function fetchShopifyData() {
         }
         return json.data;
     } catch (error) {
-        console.warn("API Fetch failed (likely CORS in sandbox), using Fallback Data.");
+        console.warn("API Fetch failed, using Fallback Data.");
         return null;
     }
 }
@@ -1157,7 +1188,10 @@ const ContactModal = ({ isOpen, onClose }) => {
         
         const formData = new FormData(e.target);
         
-        // --- LOGIQUE D'ENVOI POUR NETLIFY ---
+        // Ajout dynamique d'un sujet pour l'email admin
+        const name = formData.get('name');
+        formData.append('subject_mail', `Nouvelle demande de contact: ${name}`);
+
         try {
             const response = await fetch("/", {
                 method: "POST",
@@ -1168,7 +1202,6 @@ const ContactModal = ({ isOpen, onClose }) => {
             if (response.ok) {
                 setFormStatus('success');
             } else {
-                // Fallback si l'envoi échoue (ex: pas sur Netlify)
                 console.warn("Erreur Netlify, fallback simulation");
                 setTimeout(() => setFormStatus('success'), 1000);
             }
@@ -1199,8 +1232,8 @@ const ContactModal = ({ isOpen, onClose }) => {
                             <Mail size={32} />
                         </div>
                         <h3 className="text-xl font-serif text-stone-900 mb-4">Message Envoyé</h3>
-                        <p className="text-stone-500 mb-8">
-                            Merci de votre message. Notre équipe revient vers vous très vite.
+                        <p className="text-stone-500 mb-8 max-w-sm">
+                            Merci de votre message. Un email de confirmation vous a été envoyé. Notre équipe revient vers vous sous 48h.
                         </p>
                         <button
                             onClick={onClose}
@@ -1330,7 +1363,6 @@ const CoachingModal = ({ isOpen, onClose }) => {
 
         const formData = new FormData(e.target);
         
-        // --- LOGIQUE D'ENVOI POUR NETLIFY ---
         try {
             const response = await fetch("/", {
                 method: "POST",
@@ -1392,7 +1424,7 @@ const CoachingModal = ({ isOpen, onClose }) => {
                                 </div>
                                 <h3 className="text-2xl font-serif text-stone-900 mb-4">Message Reçu !</h3>
                                 <p className="text-stone-500 mb-8 max-w-sm">
-                                    Votre projet est entre de bonnes mains. Un coach déco vous contactera très rapidement pour un premier échange gratuit.
+                                    Votre projet est entre de bonnes mains. Un coach déco vous contactera sous 48h.
                                 </p>
                                 <button
                                     onClick={onClose}
@@ -1484,7 +1516,6 @@ const CustomFurnitureModal = ({ isOpen, onClose }) => {
 
         const formData = new FormData(e.target);
         
-        // --- LOGIQUE D'ENVOI POUR NETLIFY ---
         try {
             const response = await fetch("/", {
                 method: "POST",
@@ -2362,6 +2393,9 @@ const App = () => {
                         onContactClick={() => setIsContactOpen(true)}
                         onPhilosophyClick={() => setIsPhilosophyOpen(true)}
                     />
+
+                    {/* DÉFINITIONS DES FORMULAIRES CACHÉS POUR NETLIFY */}
+                    <NetlifyFormsDefinitions />
 
                 </main>
             )}
