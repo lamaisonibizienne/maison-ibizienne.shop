@@ -131,26 +131,28 @@ const SITE_CONFIG = {
 };
 
 // ==============================================================================
-// COMPOSANT CACHÉ POUR LA DÉTECTION NETLIFY
+// COMPOSANT CACHÉ POUR LA DÉTECTION NETLIFY (OBLIGATOIRE POUR SPAs)
 // ==============================================================================
-// Ce composant est essentiel pour que les bots Netlify détectent les champs
-// lors du build. Il doit contenir les mêmes 'name' que les formulaires React.
+// Ce composant doit contenir les définitions EXACTES de tous les champs
+// utilisés dans l'application pour que les robots Netlify les détectent.
 const NetlifyFormsDefinitions = () => (
     <div style={{ display: 'none' }}>
         {/* Formulaire Contact */}
         <form name="contact" data-netlify="true" netlify-honeypot="bot-field">
             <input type="hidden" name="form-name" value="contact" />
+            <input type="hidden" name="bot-field" />
             <input type="text" name="name" />
             <input type="email" name="email" />
             <select name="subject"></select>
             <textarea name="message"></textarea>
-            {/* Champ sujet spécifique pour l'objet de l'email admin */}
+            {/* Champ sujet pour l'email admin */}
             <input type="text" name="subject_mail" /> 
         </form>
 
         {/* Formulaire Coaching */}
         <form name="coaching" data-netlify="true" netlify-honeypot="bot-field">
             <input type="hidden" name="form-name" value="coaching" />
+            <input type="hidden" name="bot-field" />
             <input type="text" name="name" />
             <input type="email" name="email" />
             <select name="projectType"></select>
@@ -161,6 +163,7 @@ const NetlifyFormsDefinitions = () => (
         {/* Formulaire Meubles Sur Mesure */}
         <form name="custom-furniture" data-netlify="true" netlify-honeypot="bot-field">
             <input type="hidden" name="form-name" value="custom-furniture" />
+            <input type="hidden" name="bot-field" />
             <input type="text" name="name" />
             <input type="email" name="email" />
             <select name="furnitureType"></select>
@@ -1249,11 +1252,17 @@ const ContactModal = ({ isOpen, onClose }) => {
                     <form 
                         name="contact" 
                         method="POST" 
-                        data-netlify="true" 
+                        data-netlify="true"
+                        netlify-honeypot="bot-field"
                         onSubmit={handleSubmit} 
                         className="space-y-6"
                     >
                         <input type="hidden" name="form-name" value="contact" />
+                        <div hidden>
+                            <label>
+                                Don’t fill this out if you’re human: <input name="bot-field" />
+                            </label>
+                        </div>
                         
                         <div>
                             <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Nom</label>
@@ -1446,10 +1455,16 @@ const CoachingModal = ({ isOpen, onClose }) => {
                                     name="coaching"
                                     method="POST"
                                     data-netlify="true"
+                                    netlify-honeypot="bot-field"
                                     onSubmit={handleSubmit} 
                                     className="space-y-6 flex-grow"
                                 >
                                     <input type="hidden" name="form-name" value="coaching" />
+                                    <div hidden>
+                                        <label>
+                                            Don’t fill this out if you’re human: <input name="bot-field" />
+                                        </label>
+                                    </div>
 
                                     {/* Ajout des attributs name="..." */}
                                     <div className="grid grid-cols-2 gap-6">
@@ -1599,10 +1614,16 @@ const CustomFurnitureModal = ({ isOpen, onClose }) => {
                                     name="custom-furniture"
                                     method="POST"
                                     data-netlify="true"
+                                    netlify-honeypot="bot-field"
                                     onSubmit={handleSubmit} 
                                     className="space-y-6 flex-grow"
                                 >
                                     <input type="hidden" name="form-name" value="custom-furniture" />
+                                    <div hidden>
+                                        <label>
+                                            Don’t fill this out if you’re human: <input name="bot-field" />
+                                        </label>
+                                    </div>
 
                                     {/* Ajout des attributs name="..." */}
                                     <div className="grid grid-cols-2 gap-6">
