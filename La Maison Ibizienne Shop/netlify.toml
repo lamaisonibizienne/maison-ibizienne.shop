@@ -1,4 +1,0 @@
-[build]
-  base = "Boutique La Maison Ibizienne" 
-  command = "npm run build"
-  publish = "dist"
