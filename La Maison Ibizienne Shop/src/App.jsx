@@ -164,9 +164,11 @@ const encode = (data) => {
         .join("&");
 };
 
-// COMPOSANT CACHÉ POUR LA DÉTECTION NETLIFY (Doit être dans le DOM)
+// COMPOSANT STATIQUE CACHÉ POUR LA DÉTECTION NETLIFY
+// Le style 'absolute top-0 opacity-0 h-0 w-0' assure qu'il est rendu dans le DOM
+// mais invisible et sans impact sur le layout, forçant Netlify à le détecter.
 const NetlifyFormsDefinitions = () => (
-    <div style={{ display: 'none' }}>
+    <div className="absolute top-0 opacity-0 h-0 w-0 overflow-hidden">
         <form name="contact" method="POST" data-netlify="true" data-netlify-honeypot="bot-field">
             <input type="hidden" name="form-name" value="contact" />
             <input type="hidden" name="bot-field" />
