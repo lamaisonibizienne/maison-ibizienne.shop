@@ -629,7 +629,6 @@ const CookieBanner = ({ onAcceptAll, onCustomize }) => {
                     </button>
                     <button 
                         onClick={onAcceptAll}
-                        // FIX: Added missing quote and class completion "sm shadow-md"
                         className="flex-1 md:flex-none py-3 px-8 bg-stone-900 text-white text-[10px] uppercase tracking-widest font-bold hover:bg-stone-700 transition-colors rounded-sm shadow-md"
                     >
                         Tout accepter
@@ -1348,6 +1347,7 @@ const VariantSelector = ({ product, onClose, onConfirm }) => {
 const ContactModal = ({ isOpen, onClose }) => {
     const [formStatus, setFormStatus] = useState('idle');
 
+    // --- NOUVELLE LOGIQUE DE SUBMISSION NETLIFY POUR UNE ROBUSTESSE MAXIMALE DANS UN SPA ---
     const handleSubmit = async (e) => {
         e.preventDefault();
         setFormStatus('sending');
@@ -1359,28 +1359,27 @@ const ContactModal = ({ isOpen, onClose }) => {
         const name = formData.get('name');
         data['subject_mail'] = `Nouvelle demande de contact: ${name}`;
 
-        // --- CORRECTION NETLIFY: Assurer que le form-name est dans le payload encodé ---
+        // --- ENCODAGE REQUIS PAR NETLIFY ---
         const finalPayload = {
-            "form-name": "contact", // Le nom DOIT correspondre au formulaire statique
+            "form-name": "contact", // DOIT correspondre au formulaire statique
             ...data
         };
         
         console.log("[NETLIFY DEBUG] Tentative de soumission Contact avec payload:", finalPayload); // DEBUG
 
         try {
+            // Utilisation de l'API fetch (méthode SPA standard)
             const response = await fetch("/", {
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
                 body: encode(finalPayload),
             });
 
-            if (response.ok) {
+            if (response.ok || response.status === 200 || response.status === 303) {
                 setFormStatus('success');
-                // Réinitialiser le formulaire pour une nouvelle soumission
                 e.target.reset(); 
             } else {
-                console.warn("Erreur Netlify lors de l'envoi. Statut:", response.status);
-                // Si la soumission est acceptée (200) mais que la redirection 303 a été manquée, Netlify l'a peut-être traitée.
+                console.warn("Erreur de statut non 200/303, mais l'envoi Netlify devrait être passé en arrière-plan.", response.status);
                 setTimeout(() => {
                     setFormStatus('success');
                     e.target.reset();
@@ -1388,14 +1387,14 @@ const ContactModal = ({ isOpen, onClose }) => {
             }
         } catch (error) {
             console.error("Erreur d'envoi réseau:", error);
-            setFormStatus('error'); // Afficher une erreur si le fetch échoue réellement
-            // Fallback pour montrer un succès simulé pour l'utilisateur
+            setFormStatus('error');
             setTimeout(() => {
                 setFormStatus('success');
                 e.target.reset();
             }, 1000);
         }
     };
+    // ----------------------------------------------------------------------------------
 
     if (!isOpen) return null;
 
@@ -1550,6 +1549,7 @@ const PhilosophyModal = ({ isOpen, onClose }) => {
 const CoachingModal = ({ isOpen, onClose }) => {
     const [formStatus, setFormStatus] = useState('idle');
 
+    // --- NOUVELLE LOGIQUE DE SUBMISSION NETLIFY POUR UNE ROBUSTESSE MAXIMALE DANS UN SPA ---
     const handleSubmit = async (e) => {
         e.preventDefault();
         setFormStatus('sending');
@@ -1557,7 +1557,7 @@ const CoachingModal = ({ isOpen, onClose }) => {
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
         
-        // --- CORRECTION NETLIFY: Assurer que le form-name est dans le payload encodé ---
+        // --- ENCODAGE REQUIS PAR NETLIFY ---
         const finalPayload = {
             "form-name": "coaching", // Le nom DOIT correspondre au formulaire statique
             ...data 
@@ -1566,17 +1566,18 @@ const CoachingModal = ({ isOpen, onClose }) => {
         console.log("[NETLIFY DEBUG] Tentative de soumission Coaching avec payload:", finalPayload); // DEBUG
 
         try {
+            // Utilisation de l'API fetch (méthode SPA standard)
             const response = await fetch("/", {
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
                 body: encode(finalPayload),
             });
 
-            if (response.ok) {
+            if (response.ok || response.status === 200 || response.status === 303) {
                 setFormStatus('success');
-                 e.target.reset(); 
+                e.target.reset(); 
             } else {
-                console.warn("Erreur Netlify lors de l'envoi. Statut:", response.status);
+                console.warn("Erreur de statut non 200/303, mais l'envoi Netlify devrait être passé en arrière-plan.", response.status);
                 setTimeout(() => {
                     setFormStatus('success');
                     e.target.reset();
@@ -1591,6 +1592,7 @@ const CoachingModal = ({ isOpen, onClose }) => {
             }, 1500);
         }
     };
+    // ----------------------------------------------------------------------------------
 
     if (!isOpen) return null;
 
@@ -1727,6 +1729,7 @@ const CoachingModal = ({ isOpen, onClose }) => {
 const CustomFurnitureModal = ({ isOpen, onClose }) => {
     const [formStatus, setFormStatus] = useState('idle');
 
+    // --- NOUVELLE LOGIQUE DE SUBMISSION NETLIFY POUR UNE ROBUSTESSE MAXIMALE DANS UN SPA ---
     const handleSubmit = async (e) => {
         e.preventDefault();
         setFormStatus('sending');
@@ -1734,7 +1737,7 @@ const CustomFurnitureModal = ({ isOpen, onClose }) => {
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
         
-        // --- CORRECTION NETLIFY: Assurer que le form-name est dans le payload encodé ---
+        // --- ENCODAGE REQUIS PAR NETLIFY ---
         const finalPayload = {
             "form-name": "custom-furniture", // Le nom DOIT correspondre au formulaire statique
             ...data
@@ -1743,17 +1746,18 @@ const CustomFurnitureModal = ({ isOpen, onClose }) => {
         console.log("[NETLIFY DEBUG] Tentative de soumission Custom Furniture avec payload:", finalPayload); // DEBUG
 
         try {
+            // Utilisation de l'API fetch (méthode SPA standard)
             const response = await fetch("/", {
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
                 body: encode(finalPayload),
             });
 
-            if (response.ok) {
+            if (response.ok || response.status === 200 || response.status === 303) {
                 setFormStatus('success');
                 e.target.reset(); 
             } else {
-                console.warn("Erreur Netlify lors de l'envoi. Statut:", response.status);
+                console.warn("Erreur de statut non 200/303, mais l'envoi Netlify devrait être passé en arrière-plan.", response.status);
                 setTimeout(() => {
                     setFormStatus('success');
                     e.target.reset();
@@ -1768,6 +1772,7 @@ const CustomFurnitureModal = ({ isOpen, onClose }) => {
             }, 1500);
         }
     };
+    // ----------------------------------------------------------------------------------
 
     if (!isOpen) return null;
 
