@@ -55,10 +55,12 @@ const COLOR_MEDIUM = '#F0EBE5';
 // ==============================================================================
 
 const DESIGN_CONFIG = {
-    COLLECTION_ITEM_WIDTH: 'w-[80vw] sm:w-[50vw] md:w-[40vw] lg:w-[30vw] xl:w-[25vw]',
-    PRODUCT_ITEM_WIDTH: 'w-[80vw] sm:w-[50vw] md:w-[40vw] lg:w-[30vw] xl:w-[25vw]',
-    JOURNAL_ITEM_WIDTH: 'w-[80vw] sm:w-[50vw] md:w-[40vw] lg:w-[30vw] xl:w-[25vw]',
-    NOUVEAUTES_ITEM_WIDTH: 'w-[60vw] sm:w-[45vw] md:w-[30vw] lg:w-[25vw] xl:w-[20vw]',
+    // Largeurs optimisées pour inciter au scroll horizontal (Peekaboo effect)
+    COLLECTION_ITEM_WIDTH: 'w-[40vw] sm:w-[35vw] md:w-[30vw] lg:w-[20vw] xl:w-[18vw]',
+    PRODUCT_ITEM_WIDTH: 'w-[40vw] sm:w-[35vw] md:w-[30vw] lg:w-[20vw] xl:w-[18vw]',
+    JOURNAL_ITEM_WIDTH: 'w-[75vw] sm:w-[45vw] md:w-[40vw] lg:w-[30vw] xl:w-[25vw]',
+    NOUVEAUTES_ITEM_WIDTH: 'w-[40vw] sm:w-[35vw] md:w-[30vw] lg:w-[20vw] xl:w-[18vw]',
+    
     ARTICLE_CLEANUP_FILTERS: [
         'Pour en savoir plus sur les produits présentés'
     ],
@@ -183,15 +185,40 @@ const NetlifyFormsDefinitions = () => (
 );
 
 // ==============================================================================
-// 3. LOGIQUE API & TRACKING ANALYTICS (SHOPIFY + GA4)
+// 3. LOGIQUE API & TRACKING ANALYTICS (SHOPIFY TREKKIE)
 // ==============================================================================
 
-// Utilitaire pour générer des UUIDs (pour les sessions utilisateurs)
 const generateUUID = () => {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
+};
+
+// Initialisation du script Trekkie (Shopify Analytics)
+const initShopifyAnalytics = () => {
+    if (typeof window === 'undefined') return;
+
+    // Configuration globale requise par Trekkie
+    window.ShopifyAnalytics = window.ShopifyAnalytics || {};
+    window.ShopifyAnalytics.meta = window.ShopifyAnalytics.meta || {};
+    window.ShopifyAnalytics.meta.currency = 'EUR';
+    // Ajout important pour le contexte
+    window.ShopifyAnalytics.meta.page = window.ShopifyAnalytics.meta.page || { pageType: 'home' };
+    window.ShopifyAnalytics.merchantGoogleAnalytics = function() {};
+
+    // Chargement du script officiel
+    const script = document.createElement('script');
+    script.src = 'https://cdn.shopify.com/s/trekkie.storefront.min.js';
+    script.async = true;
+    script.onload = () => {
+        console.log("Shopify Trekkie Loaded");
+        // Initialisation de base une fois chargé
+        if (window.trekkie && window.trekkie.track) {
+             window.trekkie.track("Page View");
+        }
+    };
+    document.head.appendChild(script);
 };
 
 const useAnalyticsTracker = (pageType, pageTitle, product = null) => {
@@ -221,38 +248,44 @@ const useAnalyticsTracker = (pageType, pageTitle, product = null) => {
             'ecommerce': product ? ecommerceData : undefined,
         });
 
-        // --- 2. SHOPIFY ANALYTICS (Monorail/Trekkie Simulation) ---
-        // Cette partie tente de pousser les données vers le tableau de bord Shopify.
-        // Note: Cela fonctionne mieux si le script 'trekkie' est chargé (voir useEffect dans App)
-        
-        // Configuration de base si non existante
-        if (!window.ShopifyAnalytics) {
-            window.ShopifyAnalytics = { lib: {} };
-        }
-        
+        // --- 2. SHOPIFY ANALYTICS SIMULATION ---
+        // On force la définition des globales pour que Trekkie puisse les lire
         window.__st = {
-            a: '10415243330', // ID du site (peut nécessiter d'être récupéré dynamiquement)
+            a: '10415243330', // Votre ID Shopify
             pageurl: window.location.href,
-            t: pageType === 'index' ? 'home' : pageType,
-            p: pageTitle,
-            u: generateUUID(), // User Token unique simulé
+            u: localStorage.getItem('_shopify_y') || generateUUID(),
+            p: pageType === 'index' ? 'home' : pageType,
             r: document.referrer
         };
+        
+        // Stockage du cookie session pour la persistance
+        if (!localStorage.getItem('_shopify_y')) {
+            localStorage.setItem('_shopify_y', window.__st.u);
+        }
 
-        // Si Trekkie est chargé, on déclenche l'événement
+        // Envoi explicite à Trekkie si disponible
         if (window.trekkie && window.trekkie.track) {
             if (pageType === 'view_item' && product) {
+                 // Format strict pour l'événement "Viewed Product" de Shopify
+                 // "Name" est le champ clé pour l'affichage
                  window.trekkie.track('Viewed Product', {
                     'Variant ID': product.variants?.edges?.[0]?.node?.id?.split('/').pop(),
                     'Product ID': product.id?.split('/').pop(),
-                    'Name': product.title,
+                    'Name': product.title, // NOM CLAIR pour le tableau de bord
+                    'content_name': product.title,
                     'Price': parseFloat(product.priceRange?.minVariantPrice?.amount || 0).toFixed(2),
-                    'Currency': product.priceRange?.minVariantPrice?.currencyCode || 'EUR',
+                    'Currency': 'EUR',
                     'Brand': "La Maison Ibizienne",
                     'Category': product.productType
                  });
+                 // Log pour debug
+                 console.log("Trekkie: Viewed Product", product.title);
             } else {
-                window.trekkie.track('Page View');
+                window.trekkie.track('Page View', {
+                    'page_path': window.location.pathname,
+                    'page_title': pageTitle,
+                    'name': pageTitle // Envoi du nom de la page
+                });
             }
         }
 
@@ -358,11 +391,9 @@ async function fetchShopifyData() {
     }
 }
 
-// Données de secours enrichies avec vos textes légaux EXACTS
 const FALLBACK_DATA = {
     shop: { 
         name: "LA MAISON IBIZIENNE",
-        // Contenu factice pour les autres, sera remplacé par l'API si dispo
         privacyPolicy: { title: "Politique de confidentialité", body: "<p>Chargement des données depuis Shopify...</p>" },
         refundPolicy: { title: "Politique de remboursement", body: "<p>Chargement des données depuis Shopify...</p>" },
         shippingPolicy: { title: "Politique d'expédition", body: "<p>Chargement des données depuis Shopify...</p>" },
@@ -373,7 +404,6 @@ const FALLBACK_DATA = {
     pages: { edges: [] }
 };
 
-// TEXTES LÉGAUX GARANTIS (Utilisés si l'API ne les trouve pas ou échoue)
 const HARDCODED_LEGAL_PAGES = {
     'mentions-legales': {
         title: "Mentions légales",
@@ -475,9 +505,7 @@ const ScrollFadeIn = ({ children, delay = 0, threshold = 0.1, className = "", in
 // 5. COMPOSANTS DESIGN & COOKIES
 // ==============================================================================
 
-// --- MODALE DE PRÉFÉRENCES COOKIES (RGPD) ---
 const CookiePreferencesModal = ({ isOpen, onClose, onSave }) => {
-    // Par défaut : Essentiels (toujours oui), Analytics (non), Marketing (non)
     const [prefs, setPrefs] = useState({
         essential: true,
         analytics: false,
@@ -485,7 +513,7 @@ const CookiePreferencesModal = ({ isOpen, onClose, onSave }) => {
     });
 
     const handleToggle = (key) => {
-        if (key === 'essential') return; // Toujours actif
+        if (key === 'essential') return; 
         setPrefs(prev => ({ ...prev, [key]: !prev[key] }));
     };
 
@@ -846,7 +874,7 @@ const Carousel = ({ title, subtitle, anchorId, itemWidth, children }) => {
                         }}
                     >
                         {React.Children.map(children, (child, index) => (
-                            <ScrollFadeIn key={index} delay={index * 100} threshold={0.5} className={`flex-shrink-0 snap-center ${itemWidth}`}>
+                            <ScrollFadeIn key={index} delay={index * 100} threshold={0.5} className={`flex-shrink-0 snap-start ${itemWidth}`}>
                                 {child}
                             </ScrollFadeIn>
                         ))}
@@ -2199,6 +2227,11 @@ const App = () => {
         injectTailwindConfig();
     }, []);
 
+    // Initialisation du tracking Shopify Trekkie
+    useEffect(() => {
+        initShopifyAnalytics();
+    }, []);
+
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [cartItems, setCartItems] = useState([]);
@@ -2370,6 +2403,18 @@ const App = () => {
     const handleAddToCart = useCallback((product, variant, quantity) => {
         const variantId = variant.id;
         const existingItemIndex = cartItems.findIndex(item => item.variantId === variantId);
+
+        // TRACKING: Added to Cart
+        if (window.trekkie && window.trekkie.track) {
+            window.trekkie.track("Added to Cart", {
+                "variant_id": variantId.split('/').pop(),
+                "product_id": product.id.split('/').pop(),
+                "product_title": product.title,
+                "variant_title": variant.title,
+                "quantity": quantity,
+                "price": parseFloat(variant.price.amount)
+            });
+        }
 
         const newItem = {
             variantId: variantId,
