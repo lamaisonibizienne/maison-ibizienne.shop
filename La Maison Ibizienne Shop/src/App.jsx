@@ -169,7 +169,7 @@ const encode = (data) => {
 // mais invisible et sans impact sur le layout, forçant Netlify à le détecter.
 const NetlifyFormsDefinitions = () => (
     <div className="absolute top-0 opacity-0 h-0 w-0 overflow-hidden">
-        <form name="contact" method="POST" data-netlify="true" data-netlify-honeypot="bot-field">
+        <form name="contact" method="POST" data-netlify="true" data-netlify-honeypot="bot-field" action="/">
             <input type="hidden" name="form-name" value="contact" />
             <input type="hidden" name="bot-field" />
             <input type="text" name="name" />
@@ -179,7 +179,7 @@ const NetlifyFormsDefinitions = () => (
             <input type="text" name="subject_mail" /> 
         </form>
 
-        <form name="coaching" method="POST" data-netlify="true" data-netlify-honeypot="bot-field">
+        <form name="coaching" method="POST" data-netlify="true" data-netlify-honeypot="bot-field" action="/">
             <input type="hidden" name="form-name" value="coaching" />
             <input type="hidden" name="bot-field" />
             <input type="text" name="name" />
@@ -189,7 +189,7 @@ const NetlifyFormsDefinitions = () => (
             <textarea name="expectations"></textarea>
         </form>
 
-        <form name="custom-furniture" method="POST" data-netlify="true" data-netlify-honeypot="bot-field">
+        <form name="custom-furniture" method="POST" data-netlify="true" data-netlify-honeypot="bot-field" action="/">
             <input type="hidden" name="form-name" value="custom-furniture" />
             <input type="hidden" name="bot-field" />
             <input type="text" name="name" />
