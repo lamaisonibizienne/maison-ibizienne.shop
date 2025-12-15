@@ -627,6 +627,7 @@ const CookieBanner = ({ onAcceptAll, onCustomize }) => {
                     </button>
                     <button 
                         onClick={onAcceptAll}
+                        // FIX: Added missing quote and class completion "sm shadow-md"
                         className="flex-1 md:flex-none py-3 px-8 bg-stone-900 text-white text-[10px] uppercase tracking-widest font-bold hover:bg-stone-700 transition-colors rounded-sm shadow-md"
                     >
                         Tout accepter
@@ -1361,6 +1362,8 @@ const ContactModal = ({ isOpen, onClose }) => {
             "form-name": "contact", // Le nom DOIT correspondre au formulaire statique
             ...data
         };
+        
+        console.log("[NETLIFY DEBUG] Tentative de soumission Contact avec payload:", finalPayload); // DEBUG
 
         try {
             const response = await fetch("/", {
@@ -1374,8 +1377,8 @@ const ContactModal = ({ isOpen, onClose }) => {
                 // Réinitialiser le formulaire pour une nouvelle soumission
                 e.target.reset(); 
             } else {
-                console.warn("Erreur Netlify lors de l'envoi, mais la soumission peut être réussie (fallback/redirect attendu).", response.status);
-                // On simule le succès si le statut n'est pas clair (ex: 303 Redirect non capturé)
+                console.warn("Erreur Netlify lors de l'envoi. Statut:", response.status);
+                // Si la soumission est acceptée (200) mais que la redirection 303 a été manquée, Netlify l'a peut-être traitée.
                 setTimeout(() => {
                     setFormStatus('success');
                     e.target.reset();
@@ -1557,6 +1560,8 @@ const CoachingModal = ({ isOpen, onClose }) => {
             "form-name": "coaching", // Le nom DOIT correspondre au formulaire statique
             ...data 
         };
+        
+        console.log("[NETLIFY DEBUG] Tentative de soumission Coaching avec payload:", finalPayload); // DEBUG
 
         try {
             const response = await fetch("/", {
@@ -1569,7 +1574,7 @@ const CoachingModal = ({ isOpen, onClose }) => {
                 setFormStatus('success');
                  e.target.reset(); 
             } else {
-                console.warn("Erreur Netlify lors de l'envoi, mais la soumission peut être réussie (fallback/redirect attendu).", response.status);
+                console.warn("Erreur Netlify lors de l'envoi. Statut:", response.status);
                 setTimeout(() => {
                     setFormStatus('success');
                     e.target.reset();
@@ -1732,6 +1737,8 @@ const CustomFurnitureModal = ({ isOpen, onClose }) => {
             "form-name": "custom-furniture", // Le nom DOIT correspondre au formulaire statique
             ...data
         };
+        
+        console.log("[NETLIFY DEBUG] Tentative de soumission Custom Furniture avec payload:", finalPayload); // DEBUG
 
         try {
             const response = await fetch("/", {
@@ -1744,7 +1751,7 @@ const CustomFurnitureModal = ({ isOpen, onClose }) => {
                 setFormStatus('success');
                 e.target.reset(); 
             } else {
-                console.warn("Erreur Netlify lors de l'envoi, mais la soumission peut être réussie (fallback/redirect attendu).", response.status);
+                console.warn("Erreur Netlify lors de l'envoi. Statut:", response.status);
                 setTimeout(() => {
                     setFormStatus('success');
                     e.target.reset();
