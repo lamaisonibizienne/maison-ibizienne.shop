@@ -168,7 +168,8 @@ const encode = (data) => {
 // Le style 'absolute top-0 opacity-0 h-0 w-0' assure qu'il est rendu dans le DOM
 // mais invisible et sans impact sur le layout, forçant Netlify à le détecter.
 const NetlifyFormsDefinitions = () => (
-    <div className="absolute top-0 opacity-0 h-0 w-0 overflow-hidden">
+    // J'utilise un style CSS minimal pour éviter que le parser de build n'ignore l'élément
+    <div style={{ position: 'absolute', top: 0, left: 0, opacity: 0, height: 1, width: 1, overflow: 'hidden' }}>
         <form name="contact" method="POST" data-netlify="true" data-netlify-honeypot="bot-field" action="/">
             <input type="hidden" name="form-name" value="contact" />
             <input type="hidden" name="bot-field" />
@@ -716,6 +717,7 @@ const HoverImageCarouselCard = ({ product, onAddToCart, onShowDescription, aspec
 
     const currentImage = images[imageIndex] || "https://placehold.co/800x1000/F0EBE5/7D7D7D?text=Produit";
     const price = product.priceRange?.minVariantPrice?.amount || '0';
+    // FIX: Complétion de la déclaration de la constante 'currency'
     const currency = product.priceRange?.minVariantPrice?.currencyCode || 'EUR';
 
     const formatPriceDisplay = (price) => {
@@ -1375,6 +1377,7 @@ const ContactModal = ({ isOpen, onClose }) => {
                 body: encode(finalPayload),
             });
 
+            // Netlify répond souvent 200 ou 303 (redirection silencieuse) même pour un succès de capture
             if (response.ok || response.status === 200 || response.status === 303) {
                 setFormStatus('success');
                 e.target.reset(); 
@@ -2312,8 +2315,6 @@ const Footer = ({ logo, onPolicyClick, onContactClick, onPhilosophyClick }) => (
                 <button onClick={() => onPolicyClick('shipping')} className="hover:text-stone-300 transition-colors">Politique d’expédition</button>
                 <span className="hidden md:inline">•</span>
                 <button onClick={() => onPolicyClick('terms')} className="hover:text-stone-300 transition-colors">Conditions générales de vente</button>
-                <span className="hidden md:inline">•</span>
-                <button onClick={() => onPolicyClick('mentions-legales')} className="hover:text-stone-300 transition-colors">Mentions légales</button>
                 <span className="hidden md:inline">•</span>
                 <button onClick={() => onPolicyClick('cookies')} className="hover:text-stone-300 transition-colors">Préférences en matière de cookies</button>
             </div>
