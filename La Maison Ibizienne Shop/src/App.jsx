@@ -159,9 +159,13 @@ const SITE_CONFIG = {
 
 // Fonction pour encoder les données de formulaire pour Netlify
 const encode = (data) => {
-    return Object.keys(data)
-        .map(key => encodeURIComponent(key) + "=" + encodeURIComponent(data[key]))
-        .join("&");
+    // S'assurer que les valeurs non définies sont traitées comme chaînes vides
+    const pairs = [];
+    for (const key in data) {
+        const value = data[key] !== undefined ? data[key] : '';
+        pairs.push(encodeURIComponent(key) + "=" + encodeURIComponent(value));
+    }
+    return pairs.join("&");
 };
 
 // Fonction utilitaire pour gérer la soumission Netlify (centralisée)
@@ -203,8 +207,7 @@ const submitNetlifyForm = async (formData, formName) => {
 
 // COMPOSANT STATIQUE CACHÉ POUR LA DÉTECTION NETLIFY
 const NetlifyFormsDefinitions = () => (
-    // Utiliser "hidden" de Tailwind est la pratique standard, mais je reviens
-    // au style inline simple pour maximiser la détection par le build Netlify.
+    // Utiliser style={{ display: 'none' }} pour le cacher du rendu final
     <div style={{ display: 'none' }}>
         <form name="contact" method="POST" data-netlify="true" data-netlify-honeypot="bot-field" action="/">
             <input type="hidden" name="form-name" value="contact" />
@@ -216,6 +219,7 @@ const NetlifyFormsDefinitions = () => (
             <input type="text" name="subject_mail" /> 
         </form>
 
+        {/* FIX: Ajout du champ 'subject' manquant dans la définition statique pour Coaching */}
         <form name="coaching" method="POST" data-netlify="true" data-netlify-honeypot="bot-field" action="/">
             <input type="hidden" name="form-name" value="coaching" />
             <input type="hidden" name="bot-field" />
@@ -224,6 +228,7 @@ const NetlifyFormsDefinitions = () => (
             <select name="projectType"></select>
             <input type="text" name="details" />
             <textarea name="expectations"></textarea>
+            <input type="text" name="subject_mail" /> {/* Ajout du champ sujet pour la correspondance */}
         </form>
 
         <form name="custom-furniture" method="POST" data-netlify="true" data-netlify-honeypot="bot-field" action="/">
@@ -1660,7 +1665,7 @@ const CoachingModal = ({ isOpen, onClose }) => {
                         <div className="absolute inset-0 z-0 opacity-60">
                                 <img
                                     src={SITE_CONFIG.COACHING.IMAGE_URL}
-                                    alt="Coaching Déco"
+                                    alt="Coaching en décoration"
                                     onError={(e) => {e.target.onerror = null; e.target.src="https://placehold.co/1000x1200/F0EBE5/7D7D7D?text=Coaching+Expertise"}}
                                     className="w-full h-full object-cover"
                                 />
@@ -1887,7 +1892,7 @@ const CustomFurnitureModal = ({ isOpen, onClose }) => {
                                 </div>
                                 <h3 className="text-2xl font-serif text-stone-900 mb-4">Demande Envoyée !</h3>
                                 <p className="text-stone-500 mb-8 max-w-sm">
-                                    Merci de nous avoir confié votre inspiration. Notre équipe de designers vous contactera sous 48h pour affiner votre projet.
+                                    Merci de nous avoir confié votre inspiration. Notre équipe de designers vous contactera sous 48h.
                                 </p>
                                 <button
                                     onClick={onClose}
