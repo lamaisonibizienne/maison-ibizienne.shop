@@ -208,35 +208,59 @@ const submitNetlifyForm = async (formData, formName) => {
 // COMPOSANT STATIQUE CACHÉ POUR LA DÉTECTION NETLIFY
 const NetlifyFormsDefinitions = () => (
     // Utiliser style={{ display: 'none' }} pour le cacher du rendu final
+    // NOTE: C'est la méthode la plus fiable quand le build Netlify peine à détecter les formulaires React.
     <div style={{ display: 'none' }}>
         <form name="contact" method="POST" data-netlify="true" data-netlify-honeypot="bot-field" action="/">
             <input type="hidden" name="form-name" value="contact" />
             <input type="hidden" name="bot-field" />
             <input type="text" name="name" />
             <input type="email" name="email" />
-            <select name="subject"></select>
+            <select name="subject">
+                {/* Options requises par Netlify pour la détection statique du champ select */}
+                <option value="produit">Question sur un produit</option>
+                <option value="commande">Suivi de commande</option>
+                <option value="partenariat">Demande de partenariat</option>
+                <option value="presse">Presse</option>
+                <option value="autre">Autre</option>
+            </select>
             <textarea name="message"></textarea>
             <input type="text" name="subject_mail" /> 
         </form>
 
-        {/* FIX: Ajout du champ sujet mail pour Coaching pour correspondre à l'envoi dynamique */}
+        {/* FIX: Ajout des options et du champ sujet mail pour Coaching */}
         <form name="coaching" method="POST" data-netlify="true" data-netlify-honeypot="bot-field" action="/">
             <input type="hidden" name="form-name" value="coaching" />
             <input type="hidden" name="bot-field" />
             <input type="text" name="name" />
             <input type="email" name="email" />
-            <select name="projectType"></select>
+            <select name="projectType">
+                {/* Options requises par Netlify pour la détection statique du champ select */}
+                <option value="coaching">Coaching Déco (Conseils & Shopping list)</option>
+                <option value="renovation">Rénovation Complète (Travaux & Suivi)</option>
+                <option value="homestaging">Home Staging (Valorisation pour vente)</option>
+                <option value="pro">Aménagement d'espace professionnel</option>
+                <option value="autre">Autre</option>
+            </select>
             <input type="text" name="details" />
             <textarea name="expectations"></textarea>
             <input type="text" name="subject_mail" /> {/* Ajout du champ sujet pour la correspondance */}
         </form>
 
+        {/* FIX: Ajout des options et du champ sujet mail pour Custom Furniture */}
         <form name="custom-furniture" method="POST" data-netlify="true" data-netlify-honeypot="bot-field" action="/">
             <input type="hidden" name="form-name" value="custom-furniture" />
             <input type="hidden" name="bot-field" />
             <input type="text" name="name" />
             <input type="email" name="email" />
-            <select name="furnitureType"></select>
+            <select name="furnitureType">
+                 {/* Options requises par Netlify pour la détection statique du champ select */}
+                <option value="table">Table à manger</option>
+                <option value="canape">Canapé / Fauteuil</option>
+                <option value="buffet">Console / Buffet</option>
+                <option value="lit">Tête de lit</option>
+                <option value="deco">Objet de décoration</option>
+                <option value="projet">Projet complet (Villa/Hôtel)</option>
+            </select>
             <input type="text" name="dimensions" />
             <textarea name="inspiration"></textarea>
             <input type="text" name="subject_mail" /> {/* Ajout du champ sujet pour la correspondance */}
