@@ -164,12 +164,48 @@ const encode = (data) => {
         .join("&");
 };
 
+// Fonction utilitaire pour gérer la soumission Netlify (centralisée)
+const submitNetlifyForm = async (formData, formName) => {
+    const data = Object.fromEntries(formData.entries());
+    
+    // Ajout automatique du form-name
+    const finalPayload = {
+        "form-name": formName,
+        ...data
+    };
+    
+    console.log(`[NETLIFY] Soumission ${formName} avec payload:`, finalPayload);
+
+    try {
+        const response = await fetch("/", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: encode(finalPayload),
+        });
+
+        // Netlify retourne souvent 200, 201 ou 303 pour les succès
+        if (response.ok || response.status === 303) {
+            return { success: true };
+        } else {
+            console.warn(`[NETLIFY] Statut ${response.status} - Formulaire probablement soumis`);
+            // On considère comme un succès si le statut n'est pas une erreur client/serveur claire
+            if (response.status < 400) {
+                 return { success: true };
+            }
+            return { success: false, warning: true };
+        }
+    } catch (error) {
+        console.error(`[NETLIFY] Erreur réseau:`, error);
+        return { success: false, warning: true };
+    }
+};
+
+
 // COMPOSANT STATIQUE CACHÉ POUR LA DÉTECTION NETLIFY
-// Le style 'absolute top-0 opacity-0 h-0 w-0' assure qu'il est rendu dans le DOM
-// mais invisible et sans impact sur le layout, forçant Netlify à le détecter.
 const NetlifyFormsDefinitions = () => (
-    // J'utilise un style CSS minimal pour éviter que le parser de build n'ignore l'élément
-    <div style={{ position: 'absolute', top: 0, left: 0, opacity: 0, height: 1, width: 1, overflow: 'hidden' }}>
+    // Utiliser "hidden" de Tailwind est la pratique standard, mais je reviens
+    // au style inline simple pour maximiser la détection par le build Netlify.
+    <div style={{ display: 'none' }}>
         <form name="contact" method="POST" data-netlify="true" data-netlify-honeypot="bot-field" action="/">
             <input type="hidden" name="form-name" value="contact" />
             <input type="hidden" name="bot-field" />
@@ -717,7 +753,6 @@ const HoverImageCarouselCard = ({ product, onAddToCart, onShowDescription, aspec
 
     const currentImage = images[imageIndex] || "https://placehold.co/800x1000/F0EBE5/7D7D7D?text=Produit";
     const price = product.priceRange?.minVariantPrice?.amount || '0';
-    // FIX: Complétion de la déclaration de la constante 'currency'
     const currency = product.priceRange?.minVariantPrice?.currencyCode || 'EUR';
 
     const formatPriceDisplay = (price) => {
@@ -1430,6 +1465,22 @@ const ContactModal = ({ isOpen, onClose }) => {
                             Fermer
                         </button>
                     </div>
+                ) : formStatus === 'error' ? (
+                    <div className="flex flex-col items-center justify-center text-center py-12 animate-fade-in">
+                        <div className="w-16 h-16 bg-red-600 text-white rounded-full flex items-center justify-center mb-6">
+                            <X size={32} />
+                        </div>
+                        <h3 className="text-xl font-serif text-stone-900 mb-4">Erreur d'envoi</h3>
+                        <p className="text-stone-500 mb-8 max-w-sm">
+                            Une erreur s'est produite lors de la soumission. Veuillez vérifier votre connexion et réessayer.
+                        </p>
+                        <button
+                            onClick={() => setFormStatus('idle')}
+                            className="bg-stone-900 text-white px-6 py-2 uppercase tracking-widest text-xs hover:bg-stone-700 rounded-sm"
+                        >
+                            Réessayer
+                        </button>
+                    </div>
                 ) : (
                     <form 
                         name="contact" 
@@ -1447,11 +1498,11 @@ const ContactModal = ({ isOpen, onClose }) => {
                         </div>
                         
                         <div>
-                            <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Nom</label>
+                            <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Nom *</label>
                             <input required name="name" type="text" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="Nom Prénom" />
                         </div>
                         <div>
-                            <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Email</label>
+                            <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Email *</label>
                             <input required name="email" type="email" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="email@exemple.com" />
                         </div>
                         <div>
@@ -1465,7 +1516,7 @@ const ContactModal = ({ isOpen, onClose }) => {
                             </select>
                         </div>
                         <div>
-                            <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Message</label>
+                            <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Message *</label>
                             <textarea required name="message" rows="4" className="w-full bg-stone-50 border border-stone-200 p-4 rounded-sm focus:border-stone-900 focus:outline-none transition-colors text-sm" placeholder="Comment pouvons-nous vous aider ?"></textarea>
                         </div>
 
@@ -1649,6 +1700,22 @@ const CoachingModal = ({ isOpen, onClose }) => {
                                     Retour au site
                                 </button>
                             </div>
+                        ) : formStatus === 'error' ? (
+                            <div className="flex flex-col items-center justify-center text-center py-12 animate-fade-in">
+                                <div className="w-16 h-16 bg-red-600 text-white rounded-full flex items-center justify-center mb-6">
+                                    <X size={32} />
+                                </div>
+                                <h3 className="text-xl font-serif text-stone-900 mb-4">Erreur d'envoi</h3>
+                                <p className="text-stone-500 mb-8 max-w-sm">
+                                    Une erreur s'est produite lors de la soumission. Veuillez vérifier votre connexion et réessayer.
+                                </p>
+                                <button
+                                    onClick={() => setFormStatus('idle')}
+                                    className="bg-stone-900 text-white px-6 py-2 uppercase tracking-widest text-xs hover:bg-stone-700 rounded-sm"
+                                >
+                                    Réessayer
+                                </button>
+                            </div>
                         ) : (
                             <>
                                 <h3 className="text-xl font-serif text-stone-900 mb-8 border-l-4 border-stone-200 pl-4">
@@ -1673,11 +1740,11 @@ const CoachingModal = ({ isOpen, onClose }) => {
                                     {/* Ajout des attributs name="..." */}
                                     <div className="grid grid-cols-2 gap-6">
                                         <div className="col-span-2 md:col-span-1">
-                                            <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Nom</label>
+                                            <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Nom *</label>
                                             <input required name="name" type="text" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="Votre nom" />
                                         </div>
                                         <div className="col-span-2 md:col-span-1">
-                                            <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Email</label>
+                                            <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Email *</label>
                                             <input required name="email" type="email" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="email@exemple.com" />
                                         </div>
                                     </div>
@@ -1788,7 +1855,7 @@ const CustomFurnitureModal = ({ isOpen, onClose }) => {
                     <div className="relative h-[40vh] lg:h-full flex flex-col justify-end p-8 lg:p-12 bg-stone-900 text-white">
                         <div className="absolute inset-0 z-0 opacity-60">
                                 <img
-                                    src="https://cdn.shopify.com/s/files/1/0943/4005/5378/files/image_2.jpg?v=1765479001"
+                                    src={SITE_CONFIG.CUSTOM_FURNITURE.IMAGE_URL}
                                     alt="Atelier artisan"
                                     onError={(e) => {e.target.onerror = null; e.target.src="https://placehold.co/1000x1200/F0EBE5/7D7D7D?text=Atelier+Sur+Mesure"}}
                                     className="w-full h-full object-cover"
@@ -1853,11 +1920,11 @@ const CustomFurnitureModal = ({ isOpen, onClose }) => {
                                     {/* Ajout des attributs name="..." */}
                                     <div className="grid grid-cols-2 gap-6">
                                         <div className="col-span-2 md:col-span-1">
-                                            <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Nom</label>
+                                            <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Nom *</label>
                                             <input required name="name" type="text" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="Jean Dupont" />
                                         </div>
                                         <div className="col-span-2 md:col-span-1">
-                                            <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Email</label>
+                                            <label className="text-[10px] uppercase tracking-widest text-stone-500 font-bold block mb-2">Votre Email *</label>
                                             <input required name="email" type="email" className="w-full bg-transparent border-b border-stone-300 py-2 focus:border-stone-900 focus:outline-none transition-colors" placeholder="jean@exemple.com" />
                                         </div>
                                     </div>
@@ -2467,7 +2534,16 @@ const App = () => {
 
     const nouveautesProducts = useMemo(() => newArrivalsCollection
         ? newArrivalsCollection.node.products.edges.map(e => e.node)
-        : allProducts.slice(0, 10)
+    // Remplacer allProducts.slice(0, 10) par des produits factices si aucun n'est disponible
+        : Array(10).fill(0).map((_, i) => ({ 
+            id: `p${i+10}`, 
+            title: `Article Nouveauté ${i+1}`, 
+            productType: 'Décoration',
+            priceRange: { minVariantPrice: { amount: `${50 + i * 10}.00`, currencyCode: "EUR" } },
+            images: { edges: [{ node: { url: `https://placehold.co/800x800/F0EBE5/7D7D7D?text=Nouveauté%20${i+1}` } }] },
+            variants: { edges: [{ node: { id: `v${i+10}`, title: `Standard`, price: { amount: `${50 + i * 10}.00` } } }] },
+            descriptionHtml: `<p>Produit d'arrivée récente, fait à la main.</p>`
+        }))
     , [newArrivalsCollection, allProducts]);
 
     // Randomisation des produits pour la section "Incontournables"
