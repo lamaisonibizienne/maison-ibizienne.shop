@@ -481,15 +481,15 @@ const FALLBACK_DATA = {
     collections: { 
         edges: [
             { node: { id: "gid://shopify/Collection/1", title: "Salon", handle: "salon", image: { url: "https://placehold.co/800x1000/F0EBE5/7D7D7D?text=Salon" }, products: { edges: [{ node: { id: "p1", title: "Fauteuil Rotin", handle: "fauteuil-rotin", description: "Magnifique fauteuil en rotin tressé à la main, parfait pour une ambiance bohème.", productType: "Meuble", tags: [], priceRange: { minVariantPrice: { amount: "350.00", currencyCode: "EUR" } }, images: { edges: [{ node: { url: "https://placehold.co/800x1000/F0EBE5/7D7D7D?text=Fauteuil" } }] }, variants: { edges: [{ node: { id: "v1", title: "Taille Standard", price: { amount: "350.00" } } }] }, descriptionHtml: "<p>Le rotin naturel donne une touche exotique à votre intérieur.</p>" } }] } } },
-            { node: { id: "gid://shopify/Collection/2", title: "Déco", handle: "deco", image: { url: "https://placehold.co/800x1000/F0EBE5/7D7D7D?text=Déco" }, products: { edges: [{ node: { id: "p2", title: "Vase en Céramique", handle: "vase-ceramique", description: "Vase artisanal en argile non émaillée, pièce unique.", productType: "Décoration", tags: [], priceRange: { minVariantPrice: { amount: "89.90", currencyCode: "EUR" } }, images: { edges: [{ node: { url: "https://placehold.co/800x1000/F0EBE5/7D7D7D?text=Vase" } }] }, variants: { edges: [{ node: { id: "v2", title: "Blanc Cassé", price: { amount: "89.90" } } }] }, descriptionHtml: "<p>Fabrication locale et traditionnelle.</p>" } }] } } },
+            { node: { id: "gid://shopify/Collection/2", title: "Déco", handle: "deco", image: { url: "https://placehold.co/800x1000/F0EBE5/7D7D7D?text=Déco" }, products: { edges: [{ node: { id: "p2", title: "Vase en Céramique", handle: "vase-ceramique", description: "Vase artisanal en argile non émaillée, pièce unique.", productType: "Décoration", tags: [], priceRange: { minVariantPrice: { amount: "89.90", currencyCode: "EUR" } }, images: { edges: [{ node: { url: "https://placehold.co/800x1000/F0EBE5/7D7D7D?text=Vase" } }] }, variants: { edges: [{ node: { id: "v2", title: "Blanc Cassé", price: { amount: "89.90" }, compareAtPrice: { amount: "120.00" } } }] }, descriptionHtml: "<p>Fabrication locale et traditionnelle.</p>" } }] } } },
             { node: { id: "gid://shopify/Collection/3", title: "Linge", handle: "linge", image: { url: "https://placehold.co/800x1000/F0EBE5/7D7D7D?text=Linge" }, products: { edges: [{ node: { id: "p3", title: "Housse de Coussin", handle: "housse-coussin", description: "Coussin en lin brut avec broderie discrète.", productType: "Textile", tags: [], priceRange: { minVariantPrice: { amount: "45.00", currencyCode: "EUR" } }, images: { edges: [{ node: { url: "https://placehold.co/800x1000/F0EBE5/7D7D7D?text=Coussin" } }] }, variants: { edges: [{ node: { id: "v3", title: "Beige", price: { amount: "45.00" } } }] }, descriptionHtml: "<p>Tissu 100% lin lavé.</p>" } }] } } },
-            { node: { id: "gid://shopify/Collection/4", title: "Nouveautés", handle: "nouveautes", image: null, products: { edges: [{ node: { id: "p4", title: "Miroir Soleil", handle: "miroir-soleil", description: "Grand miroir avec cadre en raphia tressé.", productType: "Décoration", tags: [], priceRange: { minVariantPrice: { amount: "150.00", currencyCode: "EUR" } }, images: { edges: [{ node: { url: "https://placehold.co/1000x1000/F0EBE5/7D7D7D?text=Miroir" } }] }, variants: { edges: [{ node: { id: "v4", title: "Taille M", price: { amount: "150.00" } } }] }, descriptionHtml: "<p>Une pièce maîtresse pour le salon.</p>" } }] } } },
+            { node: { id: "gid://shopify/Collection/4", title: "Nouveautés", handle: "nouveautes", image: null, products: { edges: [{ node: { id: "p4", title: "Miroir Soleil", handle: "miroir-soleil", description: "Grand miroir avec cadre en raphia tressé.", productType: "Décoration", tags: [], priceRange: { minVariantPrice: { amount: "150.00", currencyCode: "EUR" } }, images: { edges: [{ node: { url: "https://placehold.co/1000x1000/F0EBE5/7D7D7D?text=Miroir" } }] }, variants: { edges: [{ node: { id: "v4", title: "Taille M", price: { amount: "150.00" }, compareAtPrice: { amount: "195.00" } } }] }, descriptionHtml: "<p>Une pièce maîtresse pour le salon.</p>" } }] } } },
         ]
     },
     blogs: { 
         edges: [{ node: { handle: "journal", articles: { edges: [
             { node: { id: "a1", title: "5 tendances pour un salon bohème chic", excerpt: "Découvrez comment marier le style bohème avec une élégance minimaliste.", publishedAt: new Date().toISOString(), image: { url: "https://placehold.co/800x600/F0EBE5/7D7D7D?text=Tendance" }, contentHtml: "<h1>Chapitre 1</h1><p>Le secret réside dans le mélange des textures et des matières naturelles.</p>", authorV2: { name: "La Rédaction" } } },
-            { node: { id: "a2", title: "Focus Matière: L'huile d'olive dans votre déco", excerpt: "Un ingrédient inattendu pour entretenir vos meubles en bois brut.", publishedAt: new Date().toISOString(), image: { url: "https://placehold.co/800x600/F0EBE5/7D7D7D?text=Huile" }, contentHtml: "<h1>L'entretien du bois</h1><p>Les bois exotiques comme le teck nécessitent un soin particulier pour conserver leur patine.</p>", authorV2: { name: "Maryneige Catelli" } } },
+            { node: { id: "a2", title: "Focus Matière: L'huile d'olive dans votre déco", excerpt: "Un ingredient inattendu pour entretenir vos meubles en bois brut.", publishedAt: new Date().toISOString(), image: { url: "https://placehold.co/800x600/F0EBE5/7D7D7D?text=Huile" }, contentHtml: "<h1>L'entretien du bois</h1><p>Les bois exotiques comme le teck nécessitent un soin particulier pour conserver leur patine.</p>", authorV2: { name: "Maryneige Catelli" } } },
         ] } } } ] 
     },
     pages: { edges: [] }
@@ -779,8 +779,12 @@ const HoverImageCarouselCard = ({ product, onAddToCart, onShowDescription, aspec
     const price = product.priceRange?.minVariantPrice?.amount || '0';
     const currency = product.priceRange?.minVariantPrice?.currencyCode || 'EUR';
 
-    const formatPriceDisplay = (price) => {
-        const amount = parseFloat(price);
+    // Extraction des informations de promotion
+    const compareAtPrice = product.variants?.edges?.[0]?.node?.compareAtPrice?.amount;
+    const isOnSale = compareAtPrice && parseFloat(compareAtPrice) > parseFloat(price);
+
+    const formatPriceDisplay = (priceValue) => {
+        const amount = parseFloat(priceValue);
         return `${amount.toFixed(2)} ${currency}`;
     };
 
@@ -809,6 +813,13 @@ const HoverImageCarouselCard = ({ product, onAddToCart, onShowDescription, aspec
                     onError={(e) => {e.target.onerror = null; e.target.src="https://placehold.co/800x1000/F0EBE5/7D7D7D?text=Produit"}}
                     className="w-full h-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
                 />
+
+                {/* Étiquette Promotionnelle */}
+                {isOnSale && (
+                    <div className="absolute top-3 left-3 bg-stone-900 text-white text-[9px] px-2 py-1 rounded-sm font-bold z-30 uppercase tracking-[0.1em] shadow-sm animate-fade-in">
+                        Offre Spéciale
+                    </div>
+                )}
                 
                 {/* Bouton Voir la Description */}
                 <button
@@ -850,7 +861,16 @@ const HoverImageCarouselCard = ({ product, onAddToCart, onShowDescription, aspec
             <div className="p-4 pt-6 text-center">
                 <h3 className="text-base font-serif text-stone-900 mb-1">{product.title}</h3>
                 <p className="text-stone-500 text-[11px] uppercase tracking-widest font-sans mb-2">{product.productType}</p>
-                <p className="text-sm font-medium text-stone-900">{formatPriceDisplay(price)}</p>
+                <div className="flex items-center justify-center gap-2">
+                    {isOnSale && (
+                        <span className="text-[11px] text-stone-400 line-through">
+                            {formatPriceDisplay(compareAtPrice)}
+                        </span>
+                    )}
+                    <p className={`text-sm font-medium ${isOnSale ? 'text-stone-900' : 'text-stone-900'}`}>
+                        {formatPriceDisplay(price)}
+                    </p>
+                </div>
             </div>
         </div>
     );
